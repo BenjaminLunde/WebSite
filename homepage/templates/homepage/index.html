@@ -1,0 +1,98 @@
+<head>
+  <title> Benjamin Lunde's Website</title>
+  <!-- FontAwsome -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+
+  <!-- JQuery -->
+  <script
+  src="https://code.jquery.com/jquery-3.5.1.js"
+  integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+  crossorigin="anonymous"></script>
+  
+  <!-- Popper -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" 
+  integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+  crossorigin="anonymous"></script>
+  
+  <!-- Bootstrap/Bootswatch -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/4.5.3/litera/bootstrap.css" integrity="sha512-QdKJRq76laIApUeSVF7ySEjU7o/FdtdsTN15k9a8QfHBTPBOwHKMwZoj3mHdhlOkf7asi5+zhg3oTj8p0jq6nw==" crossorigin="anonymous" />
+</head>
+
+<style>
+
+div.robin {
+  background-color: yellow;
+  padding: 20px;
+}
+
+@media only screen and (max-width: 600px) {
+  div.robin {
+    background-color: lightblue;
+  }
+}
+</style>
+
+<body>
+
+  <div calss="robin"> Test </div>
+
+  <header>
+    
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark test">
+      <a class="avbar-brand mx-auto" style="font-weight:bold; font-size:1.5rem; color:#fff;" href="/">Benjamin Lunde</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#nav-collapse" aria-controls="nnav-collapse" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="nav-collapse" >
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active">
+            <a class="nav-link" href="#">Home
+              <span class="sr-only">(current)</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Features</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Pricing</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">About</a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Dropdown</a>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="#">Action</a>
+              <a class="dropdown-item" href="#">Another action</a>
+              <a class="dropdown-item" href="#">Something else here</a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="#">Separated link</a>
+            </div>
+          </li>
+        </ul>
+        <form class="form-inline my-2 my-lg-0">
+          <input class="form-control mr-sm-2" type="text" placeholder="Search">
+          <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+        </form>
+      </div>
+    </nav>
+  </header>
+
+  <div class="main-wrapper">
+		<section class="about-me-section p-3 p-lg-5 theme-bg-light">
+			<div class="container">
+				<div class="profile-teaser media flex-column flex-lg-row">
+					
+					<div class="media-body">
+						<h2 class="name font-weight-bold mb-1">Benjamin Lunde</h2>
+						<div class="tagline mb-3">Software Engineer</div>
+						<div class="bio mb-4">I'm a software engineer specialised in machine learning, frontend and backend development. I write about cooking in <a class="link-on-bg" href="/recipes/">my online cookbook</a>. Want to know how I may help your project? Check out my <a class="link-on-bg" href="/resume/">online resume</a>.
+						</div><!--//bio-->
+					</div><!--//media-body-->
+					<img class="profile-image mb-3 mb-lg-0 ml-lg-5 mr-md-0" src="media/images/profile.png" alt="">
+				</div>
+			</div>
+		</section><!--//about-me-section-->
+	</div>
+</body>

@@ -1,9 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
 {% if latest_info_list %}
-    <ul>
+<div class="row filter" style="width: 100%;">
     {% for info in latest_info_list %}
-        <li><a href="{% url 'recipes:get_one' info.id %}">{{ info.title }}</a></li>
+    <div class="col-lg-4 col-md-4 col-sm-4 col-12 mb-5 mix recipes">
+        <a href="/recipes/{{ info.id }}/">
+            <div class="pl-5 pr-5 pb-5 pt-5">
+                <img class="img-fluid list_image mb-2 large-image-ouput" src="/media/{{ info.photo }}">
+                <ul class="list-inline">
+                    <li class="list-inline-item"><h6 class="catColour">recipes</h6></li>
+                    <li class="list-inline-item"><div class="goArrow">→</div></li>
+                </ul>
+                <h2 class="blueText mb-4 mt-3"> {{ info.title }} </h2>
+                <h6 class="mb-4">{{ info.time }}</h6>
+            </div>
+        </a>
+    </div>
     {% endfor %}
-    </ul>
+</div>
+    
 {% else %}
     <p>No recipes are available.</p>
 {% endif %}
+
+{% endblock %}
+
+

@@ -1,2 +1,69 @@
-<h1>{{ info.title }}</h1>
-<p> {{ info.instructions }} </p>
+{% extends 'base.html' %}
+
+{% block content %}
+   
+    <div class="row" style="width: 100%; max-height:100%;">
+        <div class="col-lg-6 d-flex align-items-center" style="height: 843px;">
+            <div class="pl-5 pr-5 pb-5 pt-5" style="width:100%">
+                <img class="img-fluid sidebar_image mb-2" src="/media/{{info.photo }}">
+            </div>
+        </div>
+        
+        <div class="col-lg-4 col-md-6 col-sm-12 col-12 match d-flex align-items-center order-sm-2 order-lg-2 order-md-2 order-1" style="height:843px;">
+            <div class="pt-5 pb-5 pl-5 pr-5 aos-init aos-animate" data-aos="fade-left">
+
+                <h1 class="blueText mb-4 mt-3 aos-init aos-animate" data-aos="fade-up" data-aos-duration="900"> {{ info.title }} </h1>
+                <h6 class="mb-4 aos-init aos-animate" data-aos="fade-up" data-aos-duration="1000">{{ info.pub_date }}</h6>
+                <div data-aos="fade-up" data-aos-duration="1100" class="aos-init aos-animate"><p style="font-weight: 400;"> {{ info.intro }} </p></div>
+                <ul class="list-inline list-unstyled mt-5">
+                    <li class="list-inline-item mb-2 aos-init" data-aos="fade-up" data-aos-duration="1200">
+                        <i class="fa fa-user pr-1" aria-hidden="true" style="height:25px;" alt="servings">  {{ info.servings }} porsjoner  </i>	
+                    </li>
+                    <li class="list-inline-item mb-2 aos-init" data-aos="fade-up" data-aos-duration="1300">
+                        <i class="fas fa-clock pr-1" aria-hidden="true" style="height:25px;" alt="time"> {{ info.time }} </i>	
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="row pt-5 pb-5" style="width: 100%;">
+        <!--Ingredents -->
+        <div class=" text-white bg-primary order-lg-2 col-lg-4">
+            <div class=" card-body pt-5 pl-5 pr-5">
+                <h4 class="card-title" style="text-align:center;">Ingredienser</h4>
+                <hr style="height:2px;border-width:0;color:white;background-color:white">
+                <div class="tab-content">
+                    <form action="/recipes/add_to_shop/" method="post">
+                    {% csrf_token %}
+                    {% for ingredient in info.ingredient_set.all %}
+                    <div class="custom-control custom-checkbox" name="selected" style="padding-bottom: 10px;"> 
+                        <input type="checkbox" name="select{{ forloop.counter }}" value="{{ingredient.id}}" class="custom-control-input" id="customCheck{{ forloop.counter }}" style="width: 20px; height: 20px;"> <label class="custom-control-label" for="customCheck{{ forloop.counter }}">{{ ingredient.measurment }} {{ ingredient.name }}</label></input>
+                    </div>
+                    {% endfor %}
+                    <button type="button" class="btn btn-secondary" onclick="eventCheckBox()" id="selectall" name="selectall">Check all boxes</button>
+                    <button type="submit" class="btn btn-secondary">Add selected to Shoppinglist</button>
+                    </form>
+                </div>
+            </div>    
+        </div>
+
+        <div class="order-lg-1 col-lg-7"> 
+            <div class="pt-5 pb-5 pl-5 pr-5">
+                <h4 style="text-align:center;">Slik gjør du</h4>
+                <table class="table table-hover">
+                    <thead>
+                        {% for Instruction in info.instruction_set.all %}
+                      <tr>
+                        <th scope="col">{{ forloop.counter }}</th>
+                        <th scope="col">{{Instruction.text}}</th>
+                      </tr>
+                      {% endfor %}
+                    </thead>
+                </table>
+            </div>
+        </div>
+
+ 
+    </div>   
+{% endblock %}

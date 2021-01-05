@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if tagg_list %}
+
+<div style="padding-top: 40px; padding-left:60px;">
+    <h1> Shopping List </h1>
+    <ul class="list-inline list-unstyled mt-5" style="padding-right:60px;">
+        <form action="/recipes/shopping/" method="post">
+                {% csrf_token %}
+                <li class="list-inline-item mb-2"> 
+                    <label for="tagg">Add something to the shopping list</label>
+                    <select class="form-control" name ="tagg" id="select">
+                    {% for tagg in tagg_list %}
+                    <option value="{{ tagg.id }}">{{ tagg.name }}</option>
+                    {% endfor %}
+                    </select>
+                </li>
+                <li class="list-inline-item mb-2"> <input type="text" name ="name" required class="form-control" placeholder="name"> </li>
+                <li class="list-inline-item mb-2"> <input type="text" name ="measurment" required class="form-control" placeholder="amount"> </li>
+                <button type="submit" class="btn btn-primary">Add</button>
+        </form>
+
+        <a href="/recipes/delete_all"><button type="button" class="btn btn-danger float-right">Empty shopping</button></a>
+    </ul>
+    
+    <div class="row pt-5 pb-5" style="width: 100%;">
+        {% for tagg in tagg_list %}
+        <!--Ingredents -->
+        <div class=" text-white bg-primary order-lg-2 col-lg-3 border border-white">
+            <div class=" card-body pt-4 pl-4 pr-4" style="padding-bottom: 10px; padding-left: 10px;">
+                <h6 class="card-title" style="text-align:center;">{{tagg.name}}</h6>
+                <hr style="height:2px;border-width:0;color:white;background-color:white">
+                <div class="tab-content">
+                    {% for item in shop_list %}
+                    {% if item.ingredient.tagg == tagg %}
+                    <div class="custom-control custom-checkbox"> 
+                        <ul class="list-inline list-unstyled mt-4">
+                            <li class="list-inline-item"> <input type="checkbox" class="custom-control-input" id="{{tagg.id}}{{ forloop.counter }}" style="width: 20px; height: 20px;"> <label class="custom-control-label" for="{{tagg.id}}{{ forloop.counter }}" style="font-size: 16px;">{{ item.ingredient.measurment }} {{ item.ingredient.name }}</label> </input>  </li>
+                            <li class="list-inline-item float-right"><a href="/recipes/delete/{{item.id}}"> <button type="button" class="btn btn-primary" style="padding:2px;"> Delete <i class="fa fa-trash -fluid" style="padding-left: 10px;"></i> </button></a></li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>    
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+
+{% else %}
+    <p>Taggs are available.</p>
+{% endif %}
+{% endblock %}

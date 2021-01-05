@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if user.is_authenticated %}
+<div style="padding-top: 40px; padding-left:60px;">
+    <h1> Account owerview </h1>
+    <table class="table table-hover">
+        <tbody>
+          <tr>
+            <td >Account name</td>
+            <th>{{ user.username }}</th>
+          </tr>
+        </tbody>
+        <!--tbody>
+            <tr>
+              <td >Name</td>
+              <th>{{ user.first_name }} {{user.last_name}}</th>
+            </tr>
+        </tbody-->
+        <tbody>
+            <tr>
+              <td >Email</td>
+              <th>{{ user.email }}</th>
+            </tr>
+        </tbody>
+        <tbody>
+            <tr>
+              <td >Admin</td>
+              <th>{{ user.is_staff }}</th>
+            </tr>
+        </tbody>
+        <tbody>
+            <tr>
+              <td >Super</td>
+              <th>{{ user.is_superuser }}</th>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+{% else %}
+<meta http-equiv="refresh" content="0; URL=/recipes/accounts/login/" />
+{% endif %}
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div style="padding-top: 40px; padding-left:40px;">
+    <h2 >Log In</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary" value="Log in">Log In</button>
+    </form>
+    <p style="padding-top: 20px;"><a href="/recipes/accounts/password_reset/">Forgot Password</a> <a style="padding-left: 20px;" href="/recipes/signup/">Create account</a></p>
+</div>
+
+{% endblock %}

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+    <head>
+		<title> Benjamin Lunde's Website</title>
+		<!-- FontAwsome -->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA==" crossorigin="anonymous" />
+		
+		<!-- Bootstrap/Bootswatch -->
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/litera/bootstrap.min.css" integrity="sha384-enpDwFISL6M3ZGZ50Tjo8m65q06uLVnyvkFO3rsoW0UC15ATBFz3QEhr3hmxpYsn" crossorigin="anonymous">
+    </head>
+    {% block style %}
+    <style>
+    div.top_bar {
+	visibility: visible;
+	}
+	div.side_bar{
+	visibility: visible;
+	}
+    a.icons_topbar{
+	color:#02b875;
+	text-decoration: none;
+    font-size: 20px;
+	background-color: transparent;
+	}
+    a.icons_sidebar{
+	color:#02b875;
+	text-decoration: none;
+    font-size: 40px;
+	background-color: transparent;
+	}
+    li.frame_icons_sidebar{
+        width: 58px;
+		height: 58px;
+        text-align: center;
+		border-radius: 50%;
+		background-color: #fff;
+    }
+    li.frame_icons_topbar{
+        width: 32px;
+		height: 32px;
+        text-align: center;
+		border-radius: 50%;
+		background-color: #fff;
+    }
+    td.padding-bot{
+	padding-bottom:10px
+	}
+    a.icons_list_topbar{
+        color: white;
+    }
+    tbody.link_type{
+	    color: rgba(255,255,255,0.8);;
+	    font-size: 1.8rem;
+	    font-weight: bold;
+	}
+
+    @media screen and (max-width: 992px) {
+        div.side_bar {
+            display: none;
+        }
+    }
+    @media screen and (min-width: 992px) {
+        div.top_bar {
+            display: none;
+        }
+    }
+
+    div.main-wrapper {
+		visibility: visible;
+	}
+
+	@media screen and (min-width: 992px) {
+	div.main-wrapper {
+		margin-left: 310px;
+	}
+	}
+
+	@media screen and (max-width: 992px) {
+		div.main-wrapper {
+			margin-left: 0;
+		}
+	}
+
+    </style>
+    {% endblock %}
+
+    <body>
+        <!-- Top bar when screen is to narrow-->
+        <div class="top_bar">
+            <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+                <!-- Navbar closed-->
+                <button class="navbar-toggler" style="position:absolute;left:0;top:7.5px" type="button" data-toggle="collapse" data-target="#nav-collapse" aria-controls="nav-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                  </button>
+                <a class="navbar-brand mx-auto" style="font-weight:bold; font-size:1.5rem;  color:#fff;"  href="/">Benjamin Lunde</a>
+
+                <!-- Navbar open-->
+                <div class= "navbar-collapse flex-column collapse mx-auto row" id="nav-collapse">
+                    <!-- Intro-->
+                    <div class = "container"  style="width:100%;">
+                        <img class="rounded-circle  mx-auto" src="media/images/profile.jpg" alt="profileimage" style="width:200px;height:200px;padding-top: 10px; padding-bottom: 10px;">
+                        <p style="color:white; padding-top: 10px; text-align:center;font-size:20px">Hei, og velkommen til min nettside. Jeg heter Benjamin og er utdannet informatikker. Om du lurer på noe, eller trenger hjelp ikke nøl med å ta kontakt.</p>
+                        <ul class="social-list list-inline mx-auto">
+							<li class="list-inline-item frame_icons_topbar"><a href="#"><a class="icons_topbar" href="https://twitter.com/mrcarrotbunny"><i class="fab fa-twitter fa-fw"></i></a></td>
+							<li class="list-inline-item frame_icons_topbar"><a href="#"><a class="icons_topbar" href="https://www.linkedin.com/in/benjamin-lunde/"><i class="fab fa-linkedin-in fa-fw"></i></a></td>
+							<li class="list-inline-item frame_icons_topbar"><a href="#"><a class="icons_topbar" href="https://github.com/BenjaminLunde"><i class="fab fa-github-alt fa-fw"></i></a></td>
+                        </ul>
+                        <div calss = "container" style="width:100%;">
+                            <hr style="background-color:white;border-color:white;color:white"> 
+                            <ul class="navbar-nav">
+                                <li class="nav-item active" style="padding-bottom: 10px;">
+                                    <a class="icons_list_topbar" href="/"><i class="fas fa-user fa-fw mr-2" style="font-size:20px; padding-right:4px;"></i>About Me </a>
+                                </li>
+                                <li class="nav-item" style="padding-bottom: 10px;">
+                                    <a class="icons_list_topbar"  href="/resume/"><i class="fas fa-file-alt fa-fw mr-2" style="font-size:20px;"></i>Resume</a>
+                                </li>
+                                <li class="nav-item" style="padding-bottom: 10px;">
+                                    <a class="icons_list_topbar" href="/recipes/"><i class="fas fa-utensils fa-fw mr-2" style="font-size:20px;"></i>Cooking</a>
+                                </li>
+                                <li class="nav-item" style="padding-bottom: 10px;">
+                                    <a class="icons_list_topbar"  href="/contact/"><i class="fas fa-envelope-open-text fa-fw mr-2" style="font-size:20px;"></i>Contact</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                   
+                </div>
+            </nav>
+        </div>
+
+        <!-- Side bar when screen is wide enough-->
+        <div class="side_bar">
+            <nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="padding-left:10px;position:fixed; left:0;top:0;height: 100vh; width: 320px;">
+                <div class ="container">    
+                    <div class="row" style="width:280px;">
+                        <!-- Profile section-->
+                        <a class="navbar-brand mx-auto" style="font-size:34px; font-weight: bold; padding-bottom: 20px;" href="/">Benjamin Lunde</a>
+                        <img class="rounded-circle mx-auto" src="media/images/profile.jpg" alt="image" style="width:260px;height:260px;">
+                        <p style="color:white; padding-top: 10px; text-align:center;font-size:20px">Hei, og velkommen til min nettside. Jeg heter Benjamin og er utdannet informatikker. Om du lurer på noe, eller trenger hjelp ikke nøl med å ta kontakt.</p>
+                        <!-- Social list-->
+                        <ul class="social-list list-inline mx-auto">
+							<li class="list-inline-item frame_icons_sidebar"><a href="#"><a class="icons_sidebar" href="https://twitter.com/mrcarrotbunny"><i class="fab fa-twitter fa-fw"></i></a></td>
+							<li class="list-inline-item frame_icons_sidebar"><a href="#"><a class="icons_sidebar" href="https://www.linkedin.com/in/benjamin-lunde/"><i class="fab fa-linkedin-in fa-fw"></i></a></td>
+							<li class="list-inline-item frame_icons_sidebar"><a href="#"><a class="icons_sidebar" href="https://github.com/BenjaminLunde"><i class="fab fa-github-alt fa-fw"></i></a></td>
+                        </ul>
+                        <!-- Page links -->
+                        <div calss = "container" style="width:100%;">
+                            <hr style="background-color:white;border-color:white;color:white"> 
+                            <table>
+                                <tbody class="link_type">
+                                  <tr>
+                                      <th class="padding-bot"><i class="fas fa-user fa-fw mr-2" style="font-size:40px; padding-right:4px;"></i></th>
+                                      <td class="padding-bot"><a style="color:inherit;" href="/">About Me </a></td>
+                                  </tr>
+                                  <tr>
+                                      <th class="padding-bot"><i class="fas fa-file-alt fa-fw mr-2" style="font-size:40px;"></i></th>
+                                      <td class="padding-bot"><a style="color:inherit;"  href="/resume/">Resume</a></td>
+                                    </a>
+                                  </tr>
+                                  <tr>
+                                    <th class="padding-bot"><i class="fas fa-utensils fa-fw mr-2" style="font-size:40px;"></i></th>
+                                    <td class="padding-bot"> <a style="color:inherit;"  href="/recipes/">Cooking</a></td>
+                                    </a>
+                                  </tr>
+                                  <tr>
+                                      <th class="padding-bot"><i class="fas fa-envelope-open-text fa-fw mr-2" style="font-size:40px;"></i></th>
+                                      <td class="padding-bot"><a style="color:inherit;"  href="/contact/">Contact</a></td>
+                                    </a>
+                                  </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        {% block content %}
+        {% endblock %}
+
+        <!-- JQuery -->
+        <script
+        src="https://code.jquery.com/jquery-3.5.1.js"    integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+        crossorigin="anonymous"></script>
+        <!-- Popper -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" 
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+        <!-- Bootstrap js-->
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    </body>
+</html>

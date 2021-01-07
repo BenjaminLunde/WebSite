@@ -41,8 +41,10 @@
                         <input type="checkbox" name="select{{ forloop.counter }}" value="{{ingredient.id}}" class="custom-control-input" id="customCheck{{ forloop.counter }}" style="width: 20px; height: 20px;"> <label class="custom-control-label" for="customCheck{{ forloop.counter }}">{{ ingredient.measurment }} {{ ingredient.name }}</label></input>
                     </div>
                     {% endfor %}
-                    <button type="button" class="btn btn-secondary" onclick="eventCheckBox()" id="selectall" name="selectall">Check all boxes</button>
-                    <button type="submit" class="btn btn-secondary">Add selected to Shoppinglist</button>
+                    <ul class="list-inline mb-0">
+                        <li class="list-inline-item mb-3"><button type="button" class="btn btn-secondary" onclick="eventCheckBox()" id="selectall" name="selectall">Check all boxes</button></li>
+                        <li class="list-inline-item mb-3"><button type="submit" class="btn btn-secondary">Add selected to Shoppinglist</button></li>
+                    </ul>
                     </form>
                 </div>
             </div>    

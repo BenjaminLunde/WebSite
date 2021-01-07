@@ -1,16 +1,18 @@
 {% extends 'base.html' %}
 
+
+
 {% block content %}
 {% if latest_info_list %}
 <div class="row filter" style="width: 100%;">
     {% for info in latest_info_list %}
-    <div class="col-lg-4 col-md-4 col-sm-4 col-12 mb-5 mix recipes">
+    <div class="col-lg-4 col-md-4 col-sm-4 col-12 mb-2">
         <a href="/recipes/{{ info.id }}/">
             <div class="pl-5 pr-5 pb-5 pt-5">
-                <img class="img-fluid list_image mb-2 large-image-ouput" src="/media/{{ info.photo }}">
+                <img class="img-fluid list_image mb-2" src="/media/{{ info.photo }}">
                 <ul class="list-inline">
-                    <li class="list-inline-item"><h6 class="catColour">recipes</h6></li>
-                    <li class="list-inline-item"><div class="goArrow">→</div></li>
+                    <li class="list-inline-item"><h6>recipes</h6></li>
+                    <li class="list-inline-item">→</li>
                 </ul>
                 <h2 class="blueText mb-4 mt-3"> {{ info.title }} </h2>
                 <h6 class="mb-4">{{ info.time }}</h6>

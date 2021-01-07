@@ -30,7 +30,7 @@ DEBUG = True #os.getenv("DEBUG", "False") == "True"
 
 DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "False") == "True"
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost", "web-site-om9rn.ondigitalocean.app", "benjaminlunde.com1"]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "web-site-om9rn.ondigitalocean.app", "benjaminlunde.com"]
 
 
 # Application definition

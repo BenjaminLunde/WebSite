@@ -92,7 +92,7 @@ DATABASES = {
 }
 
 
-'''
+
 if DEVELOPMENT_MODE is True:
     DATABASES = {
         "default": {
@@ -106,7 +106,7 @@ elif len(sys.argv) > 0 and sys.argv[1] != 'collectstatic':
     DATABASES = {
         "default": dj_database_url.parse(os.environ.get("DATABASE_URL")),
     }
-'''
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators

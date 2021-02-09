@@ -5,7 +5,8 @@
     <div class="row" style="width: 100%; max-height:100%;">
         <div class="col-lg-6 d-flex align-items-center" style="height: 843px;">
             <div class="pl-5 pr-5 pb-5 pt-5" style="width:100%">
-                <img class="img-fluid sidebar_image mb-2" src="/media/{{info.photo }}">
+                {{MEDIA_URL}}{{info.photo }}
+                <img class="img-fluid sidebar_image mb-2" src="{{MEDIA_URL}}{{info.photo }}">
             </div>
         </div>
         

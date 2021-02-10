@@ -10,4 +10,4 @@ def resume(request):
     return render(request, 'homepage/resume.html', {})
 
 def contact(request):
-    return render(request, 'recipes/contact.html', {})
+    return render(request, 'homepage/contact.html', {})

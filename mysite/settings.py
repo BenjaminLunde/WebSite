@@ -32,12 +32,14 @@ DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "False") == "True"
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "web-site-om9rn.ondigitalocean.app", "benjaminlunde.com"]
 
+try:
+    from local_settings import *
+except ImportError:
+    pass
 
 # Application definition
 
 INSTALLED_APPS = [
-    'resume.apps.ResumeConfig',
-    'contact.apps.ContactConfig',
     'homepage.apps.HomepageConfig',
     'recipes.apps.RecipesConfig',
     'django.contrib.admin',

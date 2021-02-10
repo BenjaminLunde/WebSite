@@ -23,27 +23,25 @@ urlpatterns = [
     #url(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
     path('', include('homepage.urls')),
     path('recipes/', include('recipes.urls')),
-    path('resume/', include('resume.urls')),
-    path('contact/', include('contact.urls')),
     path('admin/', admin.site.urls),
-        path('password_reset/',  auth_views.PasswordResetView.as_view(
-    template_name='recipes/password_reset.html',
-    email_template_name='recipes/password_reset_email.html',
-    subject_template_name='recipes/password_reset_subject.txt',
-    success_url=reverse_lazy('recipes:password_reset_done')), 
-    name='password_reset'),
+    path('password_reset/',  auth_views.PasswordResetView.as_view(
+        template_name='recipes/password_reset.html',
+        email_template_name='recipes/password_reset_email.html',
+        subject_template_name='recipes/password_reset_subject.txt',
+        success_url=reverse_lazy('recipes:password_reset_done')), 
+        name='password_reset'),
 
     path('password_reset_done/', auth_views.PasswordResetDoneView.as_view(
-    template_name='recipes/password_reset_done.html'), 
-    name='password_reset_done'),
+        template_name='recipes/password_reset_done.html'), 
+        name='password_reset_done'),
 
     path('password_reset_<uidb64>_<token>/', auth_views.PasswordResetConfirmView.as_view(
-    template_name='recipes/password_reset_confirm.html',
-    success_url=reverse_lazy('recipes:password_reset_complete')), 
-    name='password_reset_confirm'),
+        template_name='recipes/password_reset_confirm.html',
+        success_url=reverse_lazy('recipes:password_reset_complete')), 
+        name='password_reset_confirm'),
 
     path('password_reset_complete/', auth_views.PasswordResetCompleteView.as_view(
-    template_name='recipes/password_reset_complete.html'), 
-    name='password_reset_complete'),
+        template_name='recipes/password_reset_complete.html'), 
+        name='password_reset_complete'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

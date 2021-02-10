@@ -141,7 +141,8 @@
                     <a class="navbar-brand mx-auto" style="padding-bottom:10; font-weight:bold; font-size:1.8rem; color:#fff;" href="/">Benjamin Lunde</a>
                     <!-- Profile section-->
                     <div class="col-10">
-                        <img class="mb-4 rounded-circle mx-auto" src="{{STATIC_URL}}/images/profile.jpg" alt="image" style="width:180px;height:180px; right:20px; left:20px;">			    
+                        {% load static %}
+                        <img class="mb-4 rounded-circle mx-auto" src="{% static '/homepage/profile.jpg' %}" alt="image" style="width:180px;height:180px; right:20px; left:20px;">			    
                         <div class="mb-3" style="color:#fff; text-align:center; font-size: 16px;">Hei, og velkommen til min nettside, jeg heter Benjamin og er utdannet informatikker. Treger du hjel så bare ta kontakt.</div>
                         <table>
                             <tbody>

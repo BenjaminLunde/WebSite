@@ -32,6 +32,31 @@ DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "False") == "True"
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "web-site-om9rn.ondigitalocean.app", "benjaminlunde.com"]
 
+# Space stettings digital
+AWS_ACCESS_KEY_ID = 'MMIDL4DVJDDOWKUCC5GE' 
+AWS_SECRET_ACCESS_KEY = 'G5WinZ3nho+4WKsM6nAwTaTNvZyYTWJkEXubu1P2TYU'
+
+AWS_STORAGE_BUCKET_NAME = 'mediabenjaminlunde'
+AWS_S3_ENDPOINT_URL = 'https://mediabenjaminlunde.fra1.digitaloceanspaces.com'
+# I enabled the CDN, so you get a custom domain. Use the end point in the AWS_S3_CUSTOM_DOMAIN setting. 
+AWS_S3_CUSTOM_DOMAIN = 'https://media.benjaminlunde.com/mediabenjaminlunde'
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
+
+AWSS3ADDRESSING_STYLE = 'virtual'
+AWS_DEFAULT_ACL = 'public-read'
+
+STATICFILES_STORAGE = 'custom_storages.StaticStorage'
+DEFAULT_FILE_STORAGE = 'custom_storages.MediaStorage'
+
+# Use AWS_S3_ENDPOINT_URL here if you haven't enabled the CDN and got a custom domain. 
+STATIC_URL = '{}/{}/'.format(AWS_S3_CUSTOM_DOMAIN, 'static')
+STATIC_ROOT = 'static/'
+
+MEDIA_URL = '{}/{}/'.format(AWS_S3_CUSTOM_DOMAIN, 'media')
+MEDIA_ROOT = 'media/'
+
 try:
     from local_settings import *
 except ImportError:
@@ -48,6 +73,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'storages',
 ]
 
 MIDDLEWARE = [

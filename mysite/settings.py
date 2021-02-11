@@ -34,7 +34,7 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost", "web-site-om9rn.ondigitalocean.app", 
 
 # Space stettings digital
 AWS_ACCESS_KEY_ID = 'MMIDL4DVJDDOWKUCC5GE' 
-AWS_SECRET_ACCESS_KEY = 'Empty'
+AWS_SECRET_ACCESS_KEY =  os.getenv("AWS_SECRET_ACCESS_KEY", 'Empty')
 
 AWS_STORAGE_BUCKET_NAME = 'mediabenjaminlunde'
 AWS_S3_ENDPOINT_URL = 'https://mediabenjaminlunde.fra1.digitaloceanspaces.com'

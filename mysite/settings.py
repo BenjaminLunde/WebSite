@@ -34,7 +34,7 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost", "web-site-om9rn.ondigitalocean.app", 
 
 # Space stettings digital
 AWS_ACCESS_KEY_ID = 'MMIDL4DVJDDOWKUCC5GE' 
-AWS_SECRET_ACCESS_KEY =  'G5WinZ3nho+4WKsM6nAwTaTNvZyYTWJkEXubu1P2TYU'
+AWS_SECRET_ACCESS_KEY =  os.getenv("AWS_SECRET_ACCESS_KEY", 'empty')
 
 AWS_STORAGE_BUCKET_NAME = 'mediabenjaminlunde'
 AWS_S3_ENDPOINT_URL = 'https://mediabenjaminlunde.fra1.digitaloceanspaces.com'
@@ -47,12 +47,12 @@ AWS_S3_OBJECT_PARAMETERS = {
 AWSS3ADDRESSING_STYLE = 'virtual'
 AWS_DEFAULT_ACL = 'public-read'
 
-STATICFILES_STORAGE = 'custom_storages.StaticStorage'
+#STATICFILES_STORAGE = 'custom_storages.StaticStorage'
 DEFAULT_FILE_STORAGE = 'custom_storages.MediaStorage'
 
 # Use AWS_S3_ENDPOINT_URL here if you haven't enabled the CDN and got a custom domain. 
-STATIC_URL = '{}/{}/'.format(AWS_S3_ENDPOINT_URL, 'mediabenjaminlunde/static')
-STATIC_ROOT = 'mediabenjaminlunde/static/'
+#STATIC_URL = '{}/{}/'.format(AWS_S3_ENDPOINT_URL, 'mediabenjaminlunde/static')
+#STATIC_ROOT = 'mediabenjaminlunde/static/'
 
 MEDIA_URL = '{}/{}/'.format(AWS_S3_ENDPOINT_URL, 'mediabenjaminlunde/media')
 MEDIA_ROOT = 'mediabenjaminlunde/media/'
@@ -165,6 +165,8 @@ USE_TZ = True
 #STATICFILES_DIR = [
 #    os.path.join(BASE_DIR,'static')
 #]
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+STATIC_URL = '/static/'
 
 LOGIN_REDIRECT_URL = '/recipes/'
 LOGOUT_REDIRECT_URL = '/recipes/'

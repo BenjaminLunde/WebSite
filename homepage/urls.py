@@ -7,5 +7,5 @@ app_name = 'homepage'
 urlpatterns = [
     path('', views.index, name='index'),
     path('contact/', views.contact, name="contact"),
-    path('resume/', views.contact, name="resume"),
+    path('resume/', views.resume, name="resume"),
 ]  + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

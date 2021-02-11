@@ -51,11 +51,11 @@ STATICFILES_STORAGE = 'custom_storages.StaticStorage'
 DEFAULT_FILE_STORAGE = 'custom_storages.MediaStorage'
 
 # Use AWS_S3_ENDPOINT_URL here if you haven't enabled the CDN and got a custom domain. 
-STATIC_URL = '{}/{}/'.format(AWS_S3_CUSTOM_DOMAIN, 'static')
-STATIC_ROOT = 'static/'
+STATIC_URL = '{}/{}/'.format(AWS_S3_ENDPOINT_URL, 'mediabenjaminlunde/static')
+STATIC_ROOT = 'mediabenjaminlunde/static/'
 
-MEDIA_URL = '{}/{}/'.format(AWS_S3_CUSTOM_DOMAIN, 'media')
-MEDIA_ROOT = 'media/'
+MEDIA_URL = '{}/{}/'.format(AWS_S3_ENDPOINT_URL, 'mediabenjaminlunde/media')
+MEDIA_ROOT = 'mediabenjaminlunde/media/'
 
 try:
     from local_settings import *

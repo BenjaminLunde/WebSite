@@ -34,6 +34,10 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost", "web-site-om9rn.ondigitalocean.app", 
 if os.getenv("ALLOWED_HOSTS"):
     ALLOWED_HOSTS += os.getenv("ALLOWED_HOSTS").split(",")
 
+CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1", "http://localhost"]
+if os.getenv("CSRF_TRUSTED_ORIGINS"):
+    CSRF_TRUSTED_ORIGINS += os.getenv("CSRF_TRUSTED_ORIGINS").split(",")
+
 # Space stettings digital
 AWS_ACCESS_KEY_ID = 'MMIDL4DVJDDOWKUCC5GE' 
 AWS_SECRET_ACCESS_KEY =  os.getenv("AWS_SECRET_ACCESS_KEY", 'empty')

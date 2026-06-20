@@ -1,6 +1,12 @@
 {% extends 'base.html' %}
 
 {% block content %}
+{% if user.is_superuser %}
+<div class="container-fluid px-4 pb-2">
+    <a href="/admin/recipes/info/{{ info.id }}/change/" class="btn btn-warning btn-sm">✏ Edit Recipe</a>
+    <a href="/admin/recipes/info/{{ info.id }}/delete/" class="btn btn-danger btn-sm">🗑 Delete Recipe</a>
+</div>
+{% endif %}
    
     <div class="row" style="width: 100%; max-height:100%;">
         <div class="col-lg-6 d-flex align-items-center" style="height: 843px;">

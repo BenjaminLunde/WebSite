@@ -1,6 +1,5 @@
 from django.urls import path, include
 from .views import SignUpView
-from django.conf.urls import url
 
 
 from . import views

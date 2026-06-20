@@ -31,6 +31,8 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "False") == "True"
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "web-site-om9rn.ondigitalocean.app", "benjaminlunde.com"]
+if os.getenv("ALLOWED_HOSTS"):
+    ALLOWED_HOSTS += os.getenv("ALLOWED_HOSTS").split(",")
 
 # Space stettings digital
 AWS_ACCESS_KEY_ID = 'MMIDL4DVJDDOWKUCC5GE' 
@@ -48,7 +50,14 @@ AWSS3ADDRESSING_STYLE = 'virtual'
 AWS_DEFAULT_ACL = 'public-read'
 
 #STATICFILES_STORAGE = 'custom_storages.StaticStorage'
-DEFAULT_FILE_STORAGE = 'custom_storages.MediaStorage'
+STORAGES = {
+    "default": {
+        "BACKEND": "custom_storages.MediaStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Use AWS_S3_ENDPOINT_URL here if you haven't enabled the CDN and got a custom domain. 
 #STATIC_URL = '{}/{}/'.format(AWS_S3_ENDPOINT_URL, 'mediabenjaminlunde/static')
@@ -78,6 +87,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -154,8 +164,6 @@ TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
-USE_L10N = True
-
 USE_TZ = True
 
 
@@ -167,6 +175,8 @@ USE_TZ = True
 #]
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 STATIC_URL = '/static/'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_REDIRECT_URL = '/recipes/'
 LOGOUT_REDIRECT_URL = '/recipes/'

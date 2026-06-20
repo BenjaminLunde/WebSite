@@ -97,5 +97,5 @@ def add_to_shop(request):
 
 class SignUpView(generic.CreateView):
     form_class = UserCreationForm
-    success_url = reverse_lazy('/recipes/accounts/login/')
+    success_url = reverse_lazy('recipes:login')
     template_name = 'registration/signup.html'

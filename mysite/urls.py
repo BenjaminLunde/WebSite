@@ -18,10 +18,11 @@ from django.urls import include, reverse_lazy, path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
+from django.views.generic import RedirectView
 
 urlpatterns = [
-    #url(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
-    path('', include('homepage.urls')),
+    path('', RedirectView.as_view(url='/recipes/', permanent=False)),
+    path('cv/', include('homepage.urls')),
     path('recipes/', include('recipes.urls')),
     path('admin/', admin.site.urls),
     path('password_reset/',  auth_views.PasswordResetView.as_view(

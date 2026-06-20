@@ -56,19 +56,15 @@ AWS_DEFAULT_ACL = 'public-read'
 #STATICFILES_STORAGE = 'custom_storages.StaticStorage'
 STORAGES = {
     "default": {
-        "BACKEND": "custom_storages.MediaStorage",
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
 
-# Use AWS_S3_ENDPOINT_URL here if you haven't enabled the CDN and got a custom domain. 
-#STATIC_URL = '{}/{}/'.format(AWS_S3_ENDPOINT_URL, 'mediabenjaminlunde/static')
-#STATIC_ROOT = 'mediabenjaminlunde/static/'
-
-MEDIA_URL = '{}/{}/'.format(AWS_S3_ENDPOINT_URL, 'mediabenjaminlunde/media')
-MEDIA_ROOT = 'mediabenjaminlunde/media/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.getenv("MEDIA_ROOT", os.path.join(BASE_DIR, "media"))
 
 try:
     from local_settings import *

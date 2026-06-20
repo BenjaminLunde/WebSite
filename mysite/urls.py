@@ -16,9 +16,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, reverse_lazy, path
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from django.views.generic import RedirectView
+from django.views.static import serve
 
 urlpatterns = [
     path('', RedirectView.as_view(url='/recipes/', permanent=False)),
@@ -44,5 +44,6 @@ urlpatterns = [
     path('password_reset_complete/', auth_views.PasswordResetCompleteView.as_view(
         template_name='recipes/password_reset_complete.html'), 
         name='password_reset_complete'),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    path('media/<path:path>', serve, {'document_root': settings.MEDIA_ROOT}),
+]
 

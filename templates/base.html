@@ -54,7 +54,10 @@ function eventCheckBox() {
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top bg-primary">
         {% if user.is_authenticated %}
-        <a class="nav-link" href="/recipes/shopping"><i class="fas fa-shopping-cart" style="color: white; font-size: 30px;"></i></a></td>
+        <a class="nav-link" href="/recipes/shopping"><i class="fas fa-shopping-cart" style="color: white; font-size: 30px;"></i></a>
+        {% endif %}
+        {% if user.is_superuser %}
+        <a class="nav-link" href="/admin/recipes/info/add/"><i class="fas fa-plus-circle" style="color: white; font-size: 30px;"></i></a>
         {% endif %}
         <a class="navbar-brand mx-auto" href="/recipes/" style="font-size:30px;">Ben & Jenny's</a>
         {% if user.is_authenticated %}

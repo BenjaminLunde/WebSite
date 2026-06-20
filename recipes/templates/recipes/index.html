@@ -3,11 +3,6 @@
 
 
 {% block content %}
-{% if user.is_superuser %}
-<div class="container-fluid px-4 pb-2">
-    <a href="/admin/recipes/info/add/" class="btn btn-success btn-sm">+ Add Recipe</a>
-</div>
-{% endif %}
 {% if latest_info_list %}
 <div class="row filter" style="width: 100%;">
     {% for info in latest_info_list %}

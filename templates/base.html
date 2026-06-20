@@ -62,7 +62,10 @@ function eventCheckBox() {
         <a class="navbar-brand mx-auto" href="/recipes/" style="font-size:30px;">Ben & Jenny's</a>
         {% if user.is_authenticated %}
         <a class="nav-link" href="/recipes/account/" style="color: white; font-size: 18px;"> {{ user.username }} </a>
-            <a class="nav-link" href="/recipes/accounts/logout/" style="color: white; font-size: 18px;"> Log out </a>
+            <form method="post" action="/recipes/accounts/logout/" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="nav-link btn btn-link" style="color: white; font-size: 18px; padding: 0;">Log out</button>
+            </form>
         {% else %}
         <a class="nav-link" href="/recipes/accounts/login/" style="color: white; font-size: 18px;">Log In</a>
         {% endif %}

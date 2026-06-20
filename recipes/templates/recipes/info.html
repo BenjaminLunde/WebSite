@@ -1,22 +1,15 @@
 {% extends 'base.html' %}
 
 {% block content %}
-{% if user.is_superuser %}
-<div class="container-fluid px-4 pb-2">
-    <a href="/admin/recipes/info/{{ info.id }}/change/" class="btn btn-warning btn-sm">✏ Edit Recipe</a>
-    <a href="/admin/recipes/info/{{ info.id }}/delete/" class="btn btn-danger btn-sm">🗑 Delete Recipe</a>
-</div>
-{% endif %}
-   
+
     <div class="row" style="width: 100%; max-height:100%;">
-        <div class="col-lg-6 d-flex align-items-center" style="height: 843px;">
+        <div class="col-lg-6 d-flex align-items-center">
             <div class="pl-5 pr-5 pb-5 pt-5" style="width:100%">
-                {{MEDIA_URL}}{{info.photo}}
-                <img class="img-fluid sidebar_image mb-2" src="{{MEDIA_URL}}{{info.photo}}">
+                <img class="img-fluid mb-2" style="width:100%; height:auto; object-fit:cover;" src="/media/{{ info.photo }}">
             </div>
         </div>
         
-        <div class="col-lg-4 col-md-6 col-sm-12 col-12 match d-flex align-items-center order-sm-2 order-lg-2 order-md-2 order-1" style="height:843px;">
+        <div class="col-lg-4 col-md-6 col-sm-12 col-12 match d-flex align-items-center order-sm-2 order-lg-2 order-md-2 order-1">
             <div class="pt-5 pb-5 pl-5 pr-5 aos-init aos-animate" data-aos="fade-left">
 
                 <h1 class="blueText mb-4 mt-3 aos-init aos-animate" data-aos="fade-up" data-aos-duration="900"> {{ info.title }} </h1>

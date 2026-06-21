@@ -21,4 +21,7 @@ urlpatterns = [
     path('meal-planner/', views.meal_planner, name='meal_planner'),
     path('<int:info_id>/combined/', views.combined_dinner, name='combined_dinner'),
     path('add_combined_to_shop/', views.add_combined_to_shop, name='add_combined_to_shop'),
+    path('dinners/<int:dinner_id>/', views.dinner_detail, name='dinner_detail'),
+    path('dinners/<int:dinner_id>/combined/', views.dinner_combined, name='dinner_combined'),
+    path('dinners/add_to_shop/', views.add_dinner_to_shop, name='add_dinner_to_shop'),
 ]

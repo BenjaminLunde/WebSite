@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="padding-top: 40px; padding-left: 60px; padding-right: 60px;">
+
+    <h1 class="blueText mb-1">{{ dinner.title }}</h1>
+    <p class="text-muted mb-4">
+        {{ components|length }} recipe{{ components|length|pluralize }} selected
+    </p>
+
+    <div class="row" style="width: 100%;">
+
+        <!-- Ingredients panel -->
+        <div class="text-white bg-primary col-lg-4 order-lg-2">
+            <div class="card-body pt-5 pl-5 pr-5">
+                <h4 class="card-title" style="text-align: center;">All Ingredients</h4>
+                <hr style="height: 2px; border-width: 0; color: white; background-color: white;">
+
+                <form action="/recipes/dinners/add_to_shop/" method="post">
+                    {% csrf_token %}
+                    {% for component in components %}
+                    <input type="hidden" name="component_ids" value="{{ component.id }}">
+                    {% endfor %}
+
+                    {% for component in components %}
+                    <h6 class="mt-3 mb-1"
+                        style="border-bottom: 1px solid rgba(255,255,255,0.4); padding-bottom: 4px;">
+                        {{ component.role }}: {{ component.recipe.title }}
+                        <a href="/recipes/{{ component.recipe.id }}/"
+                           class="text-white-50 small ml-1" style="font-weight: normal;">↗</a>
+                    </h6>
+                    {% for ingredient in component.recipe.ingredient_set.all %}
+                    <div style="padding-bottom: 6px;">
+                        <input type="checkbox" checked
+                               style="width: 16px; height: 16px; vertical-align: middle;">
+                        <span style="font-size: 15px;">
+                            {{ ingredient.measurment }} {{ ingredient.name }}
+                        </span>
+                    </div>
+                    {% empty %}
+                    <p class="text-white-50 small"><em>No ingredients listed</em></p>
+                    {% endfor %}
+                    {% endfor %}
+
+                    <div class="mt-4 mb-3">
+                        <button type="submit" class="btn btn-secondary w-100">
+                            <i class="fas fa-shopping-cart mr-1"></i> Add all to Shopping list
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Instructions panel -->
+        <div class="order-lg-1 col-lg-7">
+            <div class="pt-5 pb-5 pl-5 pr-5">
+                {% for component in components %}
+
+                <div class="d-flex align-items-center mb-2 mt-4">
+                    <h4 class="mb-0 mr-3">
+                        <span class="badge badge-primary mr-2" style="font-size: 14px;">{{ component.role }}</span>
+                        {{ component.recipe.title }}
+                    </h4>
+                    <a href="/recipes/{{ component.recipe.id }}/"
+                       class="btn btn-outline-secondary btn-sm ml-2">View recipe →</a>
+                </div>
+
+                <table class="table table-hover mb-5">
+                    <tbody>
+                        {% for instruction in component.recipe.instruction_set.all %}
+                        <tr>
+                            <th scope="row" style="width: 40px;">{{ forloop.counter }}</th>
+                            <td>{{ instruction.text }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td class="text-muted"><em>No instructions listed</em></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                {% empty %}
+                <p class="text-muted">No components selected.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    <div class="pb-5">
+        <a href="/recipes/dinners/{{ dinner.id }}/"
+           class="btn btn-outline-primary">← Back to {{ dinner.title }}</a>
+    </div>
+
+</div>
+{% endblock %}

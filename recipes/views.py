@@ -11,7 +11,10 @@ from django.http import HttpResponseRedirect
 
 
 from django.contrib.auth.models import User
-from .models import Info, Tagg, RecipeTag, Ingredient, IngredientType, IngredientForm, IngredientToShop, PantryItem
+from .models import (
+    Info, Tagg, RecipeTag, Ingredient, IngredientType, IngredientForm,
+    IngredientToShop, PantryItem, Dinner, DinnerComponent,
+)
 
 # Create your views here.
 
@@ -25,10 +28,12 @@ def index(request):
     else:
         recipe_list = Info.objects.order_by('-pub_date')
         selected_tag = None
+    dinner_list = Dinner.objects.order_by('-pub_date').prefetch_related('components')
     context = {
         'latest_info_list': recipe_list,
         'all_tags': all_tags,
         'selected_tag': selected_tag,
+        'dinner_list': dinner_list,
     }
     return render(request, 'recipes/index.html', context)
 
@@ -260,6 +265,45 @@ def meal_planner(request):
         'error': error,
     }
     return render(request, 'recipes/meal_planner.html', context)
+
+
+def dinner_detail(request, dinner_id):
+    """Show a dinner page with its components as selectable checkboxes."""
+    dinner = get_object_or_404(Dinner, pk=dinner_id)
+    components = dinner.components.select_related('recipe').prefetch_related('recipe__recipe_tags')
+    return render(request, 'recipes/dinner.html', {'dinner': dinner, 'components': components})
+
+
+def dinner_combined(request, dinner_id):
+    """Render a combined view of the dinner components the user selected."""
+    dinner = get_object_or_404(Dinner, pk=dinner_id)
+    if request.method != 'POST':
+        return HttpResponseRedirect(f'/recipes/dinners/{dinner_id}/')
+    selected_ids = request.POST.getlist('component_ids')
+    components = DinnerComponent.objects.filter(
+        id__in=selected_ids, dinner=dinner
+    ).select_related('recipe').prefetch_related(
+        'recipe__ingredient_set__ingredient_type',
+        'recipe__instruction_set',
+    )
+    return render(request, 'recipes/dinner_combined.html', {
+        'dinner': dinner,
+        'components': components,
+    })
+
+
+def add_dinner_to_shop(request):
+    """Add all ingredients from selected dinner components to the shopping list."""
+    if not request.user.is_authenticated or request.method != 'POST':
+        return HttpResponseRedirect('/recipes/shopping/')
+    component_ids = request.POST.getlist('component_ids')
+    components = DinnerComponent.objects.filter(
+        id__in=component_ids
+    ).select_related('recipe')
+    for comp in components:
+        for ingredient in comp.recipe.ingredient_set.all():
+            IngredientToShop.objects.create(shopper=request.user, ingredient=ingredient)
+    return HttpResponseRedirect('/recipes/shopping/')
 
 
 class SignUpView(generic.CreateView):

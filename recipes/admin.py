@@ -1,5 +1,8 @@
 from django.contrib import admin
-from recipes.models import Ingredient, Instruction, Tagg, RecipeTag, PantryItem, IngredientType
+from recipes.models import (
+    Ingredient, Instruction, Tagg, RecipeTag, PantryItem,
+    IngredientType, Dinner, DinnerComponent,
+)
 from django.contrib.auth.models import User
 
 from .models import Info
@@ -29,6 +32,18 @@ class IngredientTypeAdmin(admin.ModelAdmin):
     list_filter = ('tagg',)
     search_fields = ('name',)
     ordering = ('name',)
+
+
+class DinnerComponentInline(admin.TabularInline):
+    model = DinnerComponent
+    fields = ('recipe', 'role', 'order', 'default_selected')
+    extra = 1
+
+
+@admin.register(Dinner)
+class DinnerAdmin(admin.ModelAdmin):
+    inlines = (DinnerComponentInline,)
+    list_display = ('title', 'pub_date')
 
 
 admin.site.register(Info, InfoAdmin)

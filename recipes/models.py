@@ -33,6 +33,38 @@ class Info(models.Model):
         return self.pub_date >= timezone.now() - datetime.timedelta(days=1)
 
 
+class Dinner(models.Model):
+    """A curated dinner combining several recipes (main, side, sauce, etc.)."""
+    title = models.CharField(max_length=200)
+    description = models.CharField(max_length=2000, blank=True, default='')
+    photo = models.ImageField(upload_to='images/', null=True, blank=True)
+    pub_date = models.DateTimeField('date published')
+
+    def __str__(self):
+        return self.title
+
+
+class DinnerComponent(models.Model):
+    """One recipe that is part of a Dinner, with a free-text role label."""
+    dinner = models.ForeignKey(Dinner, on_delete=models.CASCADE, related_name='components')
+    recipe = models.ForeignKey('Info', on_delete=models.CASCADE)
+    role = models.CharField(
+        max_length=100, default='Main',
+        help_text='Free text label, e.g. Main, Side, Sauce, Bread'
+    )
+    order = models.IntegerField(default=0, help_text='Lower number = shown first')
+    default_selected = models.BooleanField(
+        default=True,
+        help_text='Pre-check this component on the dinner page'
+    )
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return f"{self.dinner.title}: [{self.role}] {self.recipe.title}"
+
+
 class Tagg(models.Model):
     """Category for ingredients, e.g. Dairy, Meat, Vegetables."""
     name = models.CharField(max_length=80)

@@ -46,7 +46,7 @@ def suggest_meals(user_request, recipes, pantry_items):
 
     try:
         # genai reads GOOGLE_API_KEY from the environment automatically
-        gmodel = genai.GenerativeModel('gemini-1.5-flash')
+        gmodel = genai.GenerativeModel('gemini-2.5-flash')
 
         recipe_ctx = _recipe_context(recipes)
         pantry_ctx = _pantry_context(pantry_items)

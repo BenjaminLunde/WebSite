@@ -24,6 +24,7 @@ class Info(models.Model):
     time = models.CharField(max_length=200, default= "30 min")
     servings = models.IntegerField(default=6)
     recipe_tags = models.ManyToManyField(RecipeTag, blank=True)
+    related_recipes = models.ManyToManyField('self', blank=True)
 
     def __str__(self):
         return self.title

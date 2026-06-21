@@ -82,5 +82,36 @@
         </div>
 
  
-    </div>   
+    </div>
+
+    {% with related=info.related_recipes.all %}
+    {% if related %}
+    <div class="row pb-5" style="width: 100%; padding-left: 40px; padding-right: 40px;">
+        <div class="col-12">
+            <h4 class="mb-4">Goes well with</h4>
+        </div>
+        {% for r in related %}
+        <div class="col-lg-3 col-md-4 col-sm-6 col-12 mb-3">
+            <a href="/recipes/{{ r.id }}/" style="text-decoration:none; color:inherit;">
+                <div class="card h-100 shadow-sm">
+                    <img class="card-img-top" src="/media/{{ r.photo }}"
+                         style="height: 160px; object-fit: cover;" alt="{{ r.title }}">
+                    <div class="card-body">
+                        <h6 class="card-title blueText">{{ r.title }}</h6>
+                        <small class="text-muted"><i class="fas fa-clock"></i> {{ r.time }}</small>
+                        <div class="mt-1">
+                            {% for tag in r.recipe_tags.all %}
+                            <span class="badge badge-secondary" style="font-size:10px;">{{ tag.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+</div>
 {% endblock %}

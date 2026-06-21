@@ -15,7 +15,7 @@ class InstructionAdminInline(admin.TabularInline):
 
 class InfoAdmin(admin.ModelAdmin):
     inlines = (IngredientAdminInline, InstructionAdminInline, )
-    filter_horizontal = ('recipe_tags',)
+    filter_horizontal = ('recipe_tags', 'related_recipes',)
 
 admin.site.register(Info, InfoAdmin)
 admin.site.register(Tagg)

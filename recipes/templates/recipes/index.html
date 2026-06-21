@@ -4,7 +4,7 @@
 
 <!-- Tag filter pills -->
 {% if all_tags %}
-<div style="padding: 20px 40px 0 40px;">
+<div style="padding: 40px 40px 0 40px;">
     <a href="/recipes/" class="btn btn-sm {% if not selected_tag %}btn-primary{% else %}btn-outline-primary{% endif %} mr-1 mb-2">All</a>
     {% for tag in all_tags %}
     <a href="/recipes/?tag={{ tag.id }}" class="btn btn-sm {% if selected_tag.id == tag.id %}btn-primary{% else %}btn-outline-primary{% endif %} mr-1 mb-2">{{ tag.name }}</a>

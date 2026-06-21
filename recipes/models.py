@@ -7,6 +7,14 @@ from django.forms import ModelForm
 # Create your models here.
 
 
+class RecipeTag(models.Model):
+    """Tags for recipes, e.g. Vegetarian, Beef, Dinner, Snack, Main course."""
+    name = models.CharField(max_length=80)
+
+    def __str__(self):
+        return self.name
+
+
 class Info(models.Model):
     title = models.CharField(max_length=200, default= "Empty")
     intro = models.CharField(max_length=4000, default= "Needs no intro")
@@ -15,6 +23,7 @@ class Info(models.Model):
     pub_date = models.DateTimeField('date published')
     time = models.CharField(max_length=200, default= "30 min")
     servings = models.IntegerField(default=6)
+    recipe_tags = models.ManyToManyField(RecipeTag, blank=True)
 
     def __str__(self):
         return self.title
@@ -56,6 +65,18 @@ class IngredientToShop(models.Model):
 
     def __str__(self):
         return self.ingredient.name
+
+
+class PantryItem(models.Model):
+    """An ingredient/item the user currently has at home."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=200)
+    amount = models.CharField(max_length=200)
+    tagg = models.ForeignKey(Tagg, on_delete=models.SET_NULL, null=True, blank=True)
+    added_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
 
 
 User._meta.get_field('email').blank = False

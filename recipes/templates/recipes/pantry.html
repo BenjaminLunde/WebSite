@@ -5,63 +5,101 @@
 
 <div style="padding-top: 40px; padding-left:60px;">
     <h1>Pantry</h1>
+
+    <!-- Add to pantry form -->
     <ul class="list-inline list-unstyled mt-5" style="padding-right:60px;">
         <form action="/recipes/pantry/" method="post">
-                {% csrf_token %}
-                <li class="list-inline-item mb-2">
-                    <label for="ingredient_type">Add something to the pantry</label>
-                    <select class="form-control" name="ingredient_type" id="ingredient_type">
-                    {% for itype in ingredient_type_list %}
-                    <option value="{{ itype.id }}">{{ itype.name }}</option>
-                    {% endfor %}
-                    </select>
-                </li>
-                <li class="list-inline-item mb-2"> <input type="text" name="amount" required class="form-control" placeholder="amount (e.g. 500g)"> </li>
-                <button type="submit" class="btn btn-primary">Add</button>
+            {% csrf_token %}
+            <li class="list-inline-item mb-2">
+                <label for="ingredient_type">Add something to the pantry</label>
+                <select class="form-control" name="ingredient_type" id="ingredient_type">
+                {% for itype in ingredient_type_list %}
+                <option value="{{ itype.id }}">{{ itype.name }}</option>
+                {% endfor %}
+                </select>
+            </li>
+            <li class="list-inline-item mb-2">
+                <input type="text" name="amount" required class="form-control" placeholder="amount (e.g. 500g)">
+            </li>
+            <button type="submit" class="btn btn-primary">Add</button>
         </form>
-
-        <a href="/recipes/pantry/delete_all/"><button type="button" class="btn btn-danger float-right">Empty pantry</button></a>
     </ul>
 
-    <div class="row pt-5 pb-5" style="width: 100%;">
-        {% for tagg in tagg_list %}
-        <div class="text-white bg-primary order-lg-2 col-lg-3 border border-white">
-            <div class="card-body pt-4 pl-4 pr-4" style="padding-bottom: 10px; padding-left: 10px;">
-                <h6 class="card-title" style="text-align:center;">{{tagg.name}}</h6>
-                <hr style="height:2px;border-width:0;color:white;background-color:white">
-                <div class="tab-content">
-                    {% for item in pantry_list %}
-                    {% if item.tagg == tagg %}
-                    <div class="custom-control custom-checkbox">
-                        <ul class="list-inline list-unstyled mt-4">
-                            <li class="list-inline-item">
-                                <span style="font-size: 16px;">
-                                    {{ item.amount }} {{ item.name }}
-                                    {% if item.urgency == 'expired' %}
-                                    <span class="badge badge-danger ml-1">Expired</span>
-                                    {% elif item.urgency == 'warning' %}
-                                    <span class="badge badge-warning ml-1">Use soon</span>
-                                    {% endif %}
-                                </span>
-                                <br><small class="text-white-50">{{ item.added_date|timesince }} ago
-                                    {% if item.ingredient_type.shelf_life_days %}
-                                    · {{ item.ingredient_type.shelf_life_days }} day shelf life
-                                    {% endif %}
-                                </small>
-                            </li>
-                            <li class="list-inline-item float-right">
-                                <a href="/recipes/pantry/delete/{{item.id}}/"><button type="button" class="btn btn-primary" style="padding:2px;"> Delete <i class="fa fa-trash -fluid" style="padding-left: 10px;"></i> </button></a>
-                            </li>
-                        </ul>
+    <!-- Action buttons + pantry items wrapped in one form -->
+    <form action="/recipes/pantry/delete_selected/" method="post" id="pantryForm">
+        {% csrf_token %}
+
+        <ul class="list-inline list-unstyled mb-3" style="padding-right:60px;">
+            <li class="list-inline-item">
+                <button type="button" class="btn btn-secondary" onclick="checkAllPantry()">Check all</button>
+            </li>
+            <li class="list-inline-item">
+                <button type="submit" class="btn btn-secondary">Remove selected</button>
+            </li>
+            <li class="list-inline-item float-right">
+                <a href="/recipes/pantry/delete_all/">
+                    <button type="button" class="btn btn-dark">Empty pantry</button>
+                </a>
+            </li>
+        </ul>
+
+        <div class="row pt-3 pb-5" style="width: 100%;">
+            {% for tagg in tagg_list %}
+            <div class="text-white bg-primary order-lg-2 col-lg-3 border border-white">
+                <div class="card-body pt-4 pl-4 pr-4" style="padding-bottom: 10px; padding-left: 10px;">
+                    <h6 class="card-title" style="text-align:center;">{{tagg.name}}</h6>
+                    <hr style="height:2px;border-width:0;color:white;background-color:white">
+                    <div class="tab-content">
+                        {% for item in pantry_list %}
+                        {% if item.tagg == tagg %}
+                        <div class="custom-control custom-checkbox" style="padding-bottom: 10px;">
+                            <ul class="list-inline list-unstyled mt-2">
+                                <li class="list-inline-item">
+                                    <input type="checkbox"
+                                           name="pantry_ids"
+                                           value="{{ item.id }}"
+                                           class="custom-control-input"
+                                           id="pantry{{ item.id }}"
+                                           style="width:18px; height:18px; vertical-align:middle;">
+                                    <label class="custom-control-label" for="pantry{{ item.id }}">
+                                        <span style="font-size: 16px;">
+                                            {{ item.amount }} {{ item.name }}
+                                            {% if item.urgency == 'expired' %}
+                                            <span class="badge badge-danger ml-1">Expired</span>
+                                            {% elif item.urgency == 'warning' %}
+                                            <span class="badge badge-warning ml-1">Use soon</span>
+                                            {% endif %}
+                                        </span>
+                                        <br><small class="text-white-50">{{ item.added_date|timesince }} ago
+                                            {% if item.ingredient_type.shelf_life_days %}
+                                            · {{ item.ingredient_type.shelf_life_days }} day shelf life
+                                            {% endif %}
+                                        </small>
+                                    </label>
+                                </li>
+                                <li class="list-inline-item float-right">
+                                    <a href="/recipes/pantry/delete/{{item.id}}/"><button type="button" class="btn btn-primary" style="padding:2px;"> Delete <i class="fa fa-trash" style="padding-left: 10px;"></i> </button></a>
+                                </li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
                     </div>
-                    {% endif %}
-                    {% endfor %}
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
+    </form>
+
 </div>
+
+<script>
+function checkAllPantry() {
+    var checkboxes = document.querySelectorAll('#pantryForm input[type=checkbox]');
+    var allChecked = Array.from(checkboxes).every(function(c) { return c.checked; });
+    checkboxes.forEach(function(cb) { cb.checked = !allChecked; });
+}
+</script>
 
 {% else %}
     <p>No ingredients in the catalog yet. Ask the admin to add some ingredient types first.</p>

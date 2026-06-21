@@ -73,51 +73,38 @@
  
     </div>
 
-    {% with related=info.related_recipes.all %}
-    {% if related %}
+    {% if dinners %}
     <div class="row pb-5" style="width: 100%; padding-left: 40px; padding-right: 40px;">
         <div class="col-12">
-            <h4 class="mb-3">Plan this dinner</h4>
-            <p class="text-muted">Select which sides and sauces to include, then open a combined view with all ingredients and instructions.</p>
+            <h4 class="mb-1">Part of a dinner</h4>
+            <p class="text-muted">This recipe appears in the following dinners.</p>
         </div>
-        <div class="col-12">
-        <form action="/recipes/{{ info.id }}/combined/" method="post">
-        {% csrf_token %}
-        <div class="row">
-        {% for r in related %}
-        <div class="col-lg-3 col-md-4 col-sm-6 col-12 mb-3">
-            <div class="card h-100 shadow-sm">
-                {% if r.photo %}<img class="card-img-top" src="/media/{{ r.photo }}"
-                     style="height: 140px; object-fit: cover;" alt="{{ r.title }}">{% endif %}
-                <div class="card-body">
-                    <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input"
-                               id="rel{{ r.id }}" name="related_ids" value="{{ r.id }}"
-                               {% if related|length <= 2 %}checked{% endif %}>
-                        <label class="custom-control-label" for="rel{{ r.id }}">
-                            <strong>{{ r.title }}</strong>
-                        </label>
+        {% for dinner in dinners %}
+        <div class="col-lg-4 col-md-6 col-12 mb-3">
+            <a href="/recipes/dinners/{{ dinner.id }}/" class="text-decoration-none">
+                <div class="card h-100 shadow-sm">
+                    {% if dinner.photo %}
+                    <img class="card-img-top" src="/media/{{ dinner.photo }}"
+                         style="height: 140px; object-fit: cover;" alt="{{ dinner.title }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="blueText mb-1">{{ dinner.title }}</h5>
+                        {% if dinner.description %}
+                        <p class="text-muted small mb-1">{{ dinner.description }}</p>
+                        {% endif %}
+                        <span class="badge badge-primary">
+                            {{ dinner.components.count }} recipe{{ dinner.components.count|pluralize }}
+                        </span>
+                        <div class="mt-2">
+                            <span class="btn btn-link btn-sm p-0">Plan this dinner →</span>
+                        </div>
                     </div>
-                    <small class="text-muted d-block mt-1"><i class="fas fa-clock"></i> {{ r.time }}</small>
-                    <div class="mt-1">
-                        {% for tag in r.recipe_tags.all %}
-                        <span class="badge badge-secondary" style="font-size:10px;">{{ tag.name }}</span>
-                        {% endfor %}
-                    </div>
-                    <a href="/recipes/{{ r.id }}/" class="btn btn-link btn-sm p-0 mt-1">View recipe →</a>
                 </div>
-            </div>
+            </a>
         </div>
         {% endfor %}
-        </div>
-        <button type="submit" class="btn btn-primary mt-3">
-            <i class="fas fa-utensils mr-1"></i> Open combined dinner view
-        </button>
-        </form>
-        </div>
     </div>
     {% endif %}
-    {% endwith %}
 
 </div>
 {% endblock %}

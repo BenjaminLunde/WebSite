@@ -40,7 +40,13 @@ def index(request):
 
 def get_one(request, info_id):
     info = get_object_or_404(Info, pk=info_id)
-    return render(request, 'recipes/info.html', {'info': info})
+    # Find dinners that include this recipe as a component
+    dinners = Dinner.objects.filter(
+        components__recipe=info
+    ).prefetch_related(
+        'components__recipe__recipe_tags'
+    ).distinct()
+    return render(request, 'recipes/info.html', {'info': info, 'dinners': dinners})
 
 
 def account(request):
@@ -174,6 +180,14 @@ def delete_all_pantry(request):
     return HttpResponseRedirect('/recipes/pantry/')
 
 
+def delete_selected_pantry(request):
+    """Delete pantry items the user checked."""
+    if request.user.is_authenticated and request.method == 'POST':
+        ids = request.POST.getlist('pantry_ids')
+        PantryItem.objects.filter(user=request.user, id__in=ids).delete()
+    return HttpResponseRedirect('/recipes/pantry/')
+
+
 def remove_used_ingredients(request):
     """Remove selected recipe ingredients from the user's pantry by ingredient_type FK."""
     if request.user.is_authenticated and request.method == 'POST':
@@ -270,7 +284,9 @@ def meal_planner(request):
 def dinner_detail(request, dinner_id):
     """Show a dinner page with its components as selectable checkboxes."""
     dinner = get_object_or_404(Dinner, pk=dinner_id)
-    components = dinner.components.select_related('recipe').prefetch_related('recipe__recipe_tags')
+    components = dinner.components.select_related('recipe').prefetch_related(
+        'recipe__recipe_tags'
+    ).order_by('role', 'order', 'id')
     return render(request, 'recipes/dinner.html', {'dinner': dinner, 'components': components})
 
 

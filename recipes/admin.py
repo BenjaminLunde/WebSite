@@ -23,7 +23,7 @@ class InstructionAdminInline(admin.TabularInline):
 
 class InfoAdmin(admin.ModelAdmin):
     inlines = (IngredientAdminInline, InstructionAdminInline,)
-    filter_horizontal = ('recipe_tags', 'related_recipes',)
+    filter_horizontal = ('recipe_tags',)
 
 
 @admin.register(IngredientType)

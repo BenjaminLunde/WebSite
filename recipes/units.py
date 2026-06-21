@@ -5,13 +5,23 @@ All amounts are stored as  "<qty> <unit>"  e.g. "500 g", "3 stk", "1.5 kg", "2 d
 
 Supported units
 ---------------
-  Weight : g, kg          (base: g  — 1 kg = 1 000 g)
-  Volume : ts, ss, dl, l  (base: ml — 1 ts = 5 ml, 1 ss = 15 ml,
-                                      1 dl = 100 ml, 1 l = 1 000 ml)
-  Count  : stk            (no conversion)
+  Amount family (1 g ≈ 1 ml — close enough for cooking):
+      g, kg, dl, l, ts, ss
 
-Cross-unit arithmetic is possible within the same family (e.g. dl + l, ts + dl).
-Cross-family arithmetic (e.g. g + dl) returns (None, None) — incompatible.
+      base unit = g / ml (same number)
+        g  →    1
+        kg →  1 000
+        dl →  100
+        l  →  1 000
+        ts →    5
+        ss →   15
+
+  Count family (separate, never mixes with amounts):
+      stk
+
+Any two amount-family units can be added or subtracted.
+The result is displayed in the same unit-category as the first operand
+(the pantry item), so grams stay grams, dl stays dl, etc.
 """
 
 import re
@@ -25,41 +35,40 @@ UNITS = ['g', 'kg', 'dl', 'l', 'ts', 'ss', 'stk']
 # ---------------------------------------------------------------------------
 # Internal lookup tables
 # ---------------------------------------------------------------------------
-# Each value is the multiplier to convert 1 <unit> → base unit.
-_FAMILIES = {
-    'weight': {
-        'g':  Decimal('1'),
-        'kg': Decimal('1000'),
-    },
-    'volume': {
-        # base unit = ml
-        'ts': Decimal('5'),      # teskje  = 5 ml
-        'ss': Decimal('15'),     # spiseskje = 15 ml
-        'dl': Decimal('100'),    # deciliter = 100 ml
-        'l':  Decimal('1000'),   # liter = 1 000 ml
-    },
-    'count': {
-        'stk': Decimal('1'),
-    },
+# All "amount" units share one family; value = how many base-units (g/ml) per 1 unit.
+_AMOUNT_UNITS = {
+    'g':  Decimal('1'),
+    'kg': Decimal('1000'),
+    'dl': Decimal('100'),
+    'l':  Decimal('1000'),
+    'ts': Decimal('5'),
+    'ss': Decimal('15'),
+}
+
+_COUNT_UNITS = {
+    'stk': Decimal('1'),
 }
 
 # Flat lookup: unit_str -> (family_name, units_dict)
-_UNIT_MAP: dict = {}
-for _fam, _units in _FAMILIES.items():
-    for _u in _units:
-        _UNIT_MAP[_u] = (_fam, _units)
+_UNIT_MAP: dict = {u: ('amount', _AMOUNT_UNITS) for u in _AMOUNT_UNITS}
+_UNIT_MAP.update({u: ('count', _COUNT_UNITS) for u in _COUNT_UNITS})
 
-# Aliases accepted in parse_amount (tolerates old free-text values / typos)
+# Which display-category each unit belongs to (for pretty output)
+_DISPLAY_FAMILY = {
+    'g': 'weight', 'kg': 'weight',
+    'dl': 'volume', 'l': 'volume',
+    'ts': 'spoon',  'ss': 'spoon',
+    'stk': 'count',
+}
+
+# Aliases accepted in parse_amount (tolerates old free-text / typing variants)
 _ALIASES = {
-    # weight
     'gram': 'g', 'grams': 'g',
     'kilogram': 'kg', 'kilograms': 'kg',
-    # volume
-    'teskje': 'ts', 'teskjeer': 'ts', 'teaspoon': 'ts', 'tsp': 'ts',
-    'spiseskje': 'ss', 'spiseskjeer': 'ss', 'tablespoon': 'ss', 'tbsp': 'ss',
     'deciliter': 'dl', 'deciliters': 'dl', 'decilitre': 'dl',
     'liter': 'l', 'liters': 'l', 'litre': 'l', 'litres': 'l',
-    # count
+    'teskje': 'ts', 'teskjeer': 'ts', 'teaspoon': 'ts', 'tsp': 'ts',
+    'spiseskje': 'ss', 'spiseskjeer': 'ss', 'tablespoon': 'ss', 'tbsp': 'ss',
     'pcs': 'stk', 'pc': 'stk', 'piece': 'stk', 'pieces': 'stk',
     'stykk': 'stk', 'stykker': 'stk',
 }
@@ -93,13 +102,9 @@ def parse_amount(text: str):
     qty_str = m.group(1).replace(',', '.')
     raw_unit = m.group(2).strip().lower()
 
-    # Resolve aliases first
     unit = _ALIASES.get(raw_unit, raw_unit)
-
-    # A bare number with no unit is treated as pieces
     if unit == '':
         unit = 'stk'
-
     if unit not in _UNIT_MAP:
         return None, None
 
@@ -118,10 +123,9 @@ def format_amount(qty: Decimal, unit: str) -> str:
     Keeps at most 2 decimal places; drops trailing zeros.
 
     Examples:
-        (Decimal('500'), 'g')    -> "500 g"
-        (Decimal('1.5'), 'kg')   -> "1.5 kg"
-        (Decimal('3'),   'stk')  -> "3 stk"
-        (Decimal('0.5'), 'l')    -> "0.5 l"
+        (Decimal('500'), 'g')   -> "500 g"
+        (Decimal('1.5'), 'kg')  -> "1.5 kg"
+        (Decimal('3'),   'stk') -> "3 stk"
     """
     qty = qty.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP).normalize()
     if qty == qty.to_integral_value():
@@ -133,16 +137,17 @@ def format_amount(qty: Decimal, unit: str) -> str:
 
 def add_amounts(qty1: Decimal, unit1: str, qty2: Decimal, unit2: str):
     """
-    Add two amounts, converting between units in the same family.
+    Add two amounts.  Any two amount-family units work together.
+    stk + anything else returns (None, None).
 
-    Returns (result_qty, result_unit), or (None, None) if the units are
-    from different families (e.g. g + dl).
+    The result is shown in the same unit-category as unit1 (the existing
+    pantry item), so 500 g + 2 ss stays in grams.
 
-    Auto-promotes to a larger unit when the result is large enough:
-        700 g  + 500 g  = 1.2 kg
-        8 dl   + 5 dl   = 1.3 l
-        2 ts   + 4 ts   = 30 ml  = 2 ss
-        3 ss   + 2 dl   = 245 ml = 2.45 dl
+    Examples:
+        500 g  + 2 ss   = 530 g        (2 ss = 30 g)
+        5 dl   + 3 ts   = 5.15 dl      (3 ts = 15 ml = 0.15 dl)
+        500 g  + 3 dl   = 800 g        (3 dl = 300 ml ≈ 300 g)
+        3 ts   + 3 ts   = 2 ss         (6 ts → divisible by 3 → ss)
     """
     return _combine(qty1, unit1, qty2, unit2, add=True)
 
@@ -152,13 +157,13 @@ def subtract_amounts(qty1: Decimal, unit1: str, qty2: Decimal, unit2: str):
     Subtract qty2/unit2 from qty1/unit1.
 
     Returns (result_qty, result_unit).
-    If the result is ≤ 0, result_qty is Decimal('0') — the caller should
-    treat this as "delete the pantry item".
-    Returns (None, None) if units are from different families.
+    result_qty == 0 means "not enough left — delete the pantry item".
+    Returns (None, None) only when units are truly incompatible (stk vs amount).
 
-    Example:
-        2 dl  - 0.5 l  -> (0, 'dl')  [not enough — delete]
-        10 dl - 0.5 l  -> (500 ml)   -> (5, 'dl')
+    Examples:
+        500 g  - 8 ss   = 380 g        (8 ss = 120 g)
+        10 dl  - 4 ts   = 9.8 dl       (4 ts = 20 ml = 0.2 dl)
+        200 g  - 5 dl   = 0            (5 dl = 500 g > 200 g → delete)
     """
     return _combine(qty1, unit1, qty2, unit2, add=False)
 
@@ -168,58 +173,55 @@ def subtract_amounts(qty1: Decimal, unit1: str, qty2: Decimal, unit2: str):
 # ---------------------------------------------------------------------------
 
 def _combine(qty1, unit1, qty2, unit2, *, add: bool):
-    """Shared logic for add / subtract with automatic unit conversion."""
     if unit1 not in _UNIT_MAP or unit2 not in _UNIT_MAP:
         return None, None
 
-    fam1, units1 = _UNIT_MAP[unit1]
-    fam2, units2 = _UNIT_MAP[unit2]
+    fam1 = _UNIT_MAP[unit1][0]
+    fam2 = _UNIT_MAP[unit2][0]
 
     if fam1 != fam2:
-        return None, None  # incompatible families (e.g. g + dl)
+        return None, None  # stk mixed with an amount unit
 
-    # Convert both operands to the family's base unit
-    base1 = qty1 * units1[unit1]
-    base2 = qty2 * units2[unit2]
+    units = _UNIT_MAP[unit1][1]  # same dict for both since same family
+
+    base1 = qty1 * units[unit1]
+    base2 = qty2 * units[unit2]
 
     result_base = base1 + base2 if add else base1 - base2
 
     if not add and result_base <= 0:
-        return Decimal('0'), unit1  # signal to caller: delete the pantry item
+        return Decimal('0'), unit1
 
-    return _pick_unit(result_base, fam1)
+    # Display in the same category as unit1 (the pantry item)
+    return _pick_unit(result_base, unit1)
 
 
-def _pick_unit(base_qty: Decimal, family: str):
+def _pick_unit(base_qty: Decimal, unit_hint: str):
     """
-    Choose a human-friendly display unit for a result expressed in base units.
+    Convert base_qty (in g/ml) to a human-friendly (qty, unit) pair.
+    The display category (weight / volume / spoon) is taken from unit_hint.
 
-    Weight (base = g):
-        >= 1 000 g  →  kg
-        else        →  g
-
-    Volume (base = ml):
-        >= 1 000 ml →  l
-        >=   100 ml →  dl
-        >=    15 ml →  ss
-        <     15 ml →  ts
-
-    Count (base = stk):
-        always stk
+    Weight  (g/kg):   >= 1 000 g  → kg,  else g
+    Volume  (dl/l):   >= 1 000 ml → l,   else dl
+    Spoon   (ts/ss):  divisible by 3 ts → ss, else ts
+    Count   (stk):    always stk (base_qty already in stk)
     """
-    if family == 'weight':
+    cat = _DISPLAY_FAMILY.get(unit_hint, 'weight')
+
+    if cat == 'weight':
         if base_qty >= 1000:
             return base_qty / 1000, 'kg'
         return base_qty, 'g'
 
-    elif family == 'volume':
+    elif cat == 'volume':
         if base_qty >= 1000:
             return base_qty / 1000, 'l'
-        if base_qty >= 100:
-            return base_qty / 100, 'dl'
-        if base_qty >= 15:
-            return base_qty / 15, 'ss'
-        return base_qty / 5, 'ts'
+        return base_qty / 100, 'dl'
+
+    elif cat == 'spoon':
+        if base_qty % 3 == 0:
+            return base_qty / 3, 'ss'
+        return base_qty, 'ts'
 
     else:  # count
         return base_qty, 'stk'

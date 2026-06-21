@@ -15,6 +15,7 @@ from .models import (
     Info, Tagg, RecipeTag, Ingredient, IngredientType, IngredientForm,
     IngredientToShop, PantryItem, Dinner, DinnerComponent,
 )
+from .units import UNITS, parse_amount, format_amount, add_amounts, subtract_amounts
 
 # Create your views here.
 
@@ -70,17 +71,25 @@ def shopping(request):
 
         if request.method == 'POST':
             itype = IngredientType.objects.filter(pk=request.POST.get('ingredient_type')).first()
-            amount = request.POST.get('measurment', '').strip()
-            if itype and amount:
-                ingredient = Ingredient()
-                ingredient.ingredient_type = itype
-                ingredient.measurment = amount
-                ingredient.save()
+            raw_qty = request.POST.get('qty', '').strip()
+            unit = request.POST.get('unit', '').strip()
+            if itype and raw_qty and unit in UNITS:
+                try:
+                    from decimal import Decimal
+                    qty = Decimal(raw_qty)
+                    measurment = format_amount(qty, unit)
+                except Exception:
+                    measurment = ''
+                if measurment:
+                    ingredient = Ingredient()
+                    ingredient.ingredient_type = itype
+                    ingredient.measurment = measurment
+                    ingredient.save()
 
-                toShop = IngredientToShop()
-                toShop.shopper = current_user
-                toShop.ingredient = ingredient
-                toShop.save()
+                    toShop = IngredientToShop()
+                    toShop.shopper = current_user
+                    toShop.ingredient = ingredient
+                    toShop.save()
 
         tagg_list = Tagg.objects.order_by('id')
         ingredient_type_list = IngredientType.objects.order_by('name')
@@ -91,6 +100,7 @@ def shopping(request):
             'tagg_list': tagg_list,
             'ingredient_type_list': ingredient_type_list,
             'shop_list': shop_list,
+            'units': UNITS,
         }
         return render(request, 'recipes/shopping.html', context)
     else:
@@ -138,13 +148,39 @@ def pantry(request):
 
         if request.method == 'POST':
             itype = IngredientType.objects.filter(pk=request.POST.get('ingredient_type')).first()
-            amount = request.POST.get('amount', '').strip()
-            if itype and amount:
-                PantryItem.objects.create(
-                    user=current_user,
-                    ingredient_type=itype,
-                    amount=amount,
-                )
+            raw_qty = request.POST.get('qty', '').strip()
+            unit = request.POST.get('unit', '').strip()
+            if itype and raw_qty and unit in UNITS:
+                try:
+                    from decimal import Decimal
+                    new_qty = Decimal(raw_qty)
+                except Exception:
+                    new_qty = None
+                if new_qty is not None and new_qty > 0:
+                    new_amount = format_amount(new_qty, unit)
+                    existing = PantryItem.objects.filter(
+                        user=current_user, ingredient_type=itype
+                    ).first()
+                    if existing:
+                        pq, pu = parse_amount(existing.amount)
+                        if pq is not None:
+                            rq, ru = add_amounts(pq, pu, new_qty, unit)
+                            if rq is not None:
+                                existing.amount = format_amount(rq, ru)
+                                existing.save()
+                            else:
+                                # Incompatible units — create a new entry
+                                PantryItem.objects.create(
+                                    user=current_user, ingredient_type=itype, amount=new_amount
+                                )
+                        else:
+                            # Existing amount not parseable — overwrite it
+                            existing.amount = new_amount
+                            existing.save()
+                    else:
+                        PantryItem.objects.create(
+                            user=current_user, ingredient_type=itype, amount=new_amount
+                        )
 
         tagg_list = Tagg.objects.order_by('id')
         ingredient_type_list = IngredientType.objects.order_by('name')
@@ -155,6 +191,7 @@ def pantry(request):
             'tagg_list': tagg_list,
             'ingredient_type_list': ingredient_type_list,
             'pantry_list': pantry_list,
+            'units': UNITS,
         }
         return render(request, 'recipes/pantry.html', context)
     else:
@@ -167,10 +204,28 @@ def add_to_pantry(request):
         shop_item_id = request.POST.get('shop_item_id')
         obj = IngredientToShop.objects.filter(id=shop_item_id, shopper=request.user).first()
         if obj and obj.ingredient.ingredient_type:
+            itype = obj.ingredient.ingredient_type
+            new_amount = obj.ingredient.measurment  # already formatted string
+            new_qty, new_unit = parse_amount(new_amount)
+
+            existing = PantryItem.objects.filter(
+                user=request.user, ingredient_type=itype
+            ).first()
+
+            if existing and new_qty is not None:
+                pq, pu = parse_amount(existing.amount)
+                if pq is not None:
+                    rq, ru = add_amounts(pq, pu, new_qty, new_unit)
+                    if rq is not None:
+                        existing.amount = format_amount(rq, ru)
+                        existing.save()
+                        obj.delete()
+                        return HttpResponseRedirect('/recipes/pantry/')
+            # Fallback: create a new pantry entry (old behaviour)
             PantryItem.objects.create(
                 user=request.user,
-                ingredient_type=obj.ingredient.ingredient_type,
-                amount=obj.ingredient.measurment,
+                ingredient_type=itype,
+                amount=new_amount,
             )
             obj.delete()
     return HttpResponseRedirect('/recipes/pantry/')
@@ -199,7 +254,7 @@ def delete_selected_pantry(request):
 
 
 def remove_used_ingredients(request):
-    """Remove selected recipe ingredients from the user's pantry by ingredient_type FK."""
+    """Subtract selected recipe ingredient amounts from the user's pantry."""
     if request.user.is_authenticated and request.method == 'POST':
         ingredients = request.POST
         list_ing = iter(ingredients)
@@ -207,10 +262,24 @@ def remove_used_ingredients(request):
         for item in list_ing:
             ingredient = Ingredient.objects.filter(pk=request.POST[item]).first()
             if ingredient and ingredient.ingredient_type:
-                PantryItem.objects.filter(
+                pantry_item = PantryItem.objects.filter(
                     user=request.user,
                     ingredient_type=ingredient.ingredient_type,
-                ).delete()
+                ).first()
+                if pantry_item is None:
+                    continue
+                pq, pu = parse_amount(pantry_item.amount)
+                rq, ru = parse_amount(ingredient.measurment)
+                if pq is not None and rq is not None:
+                    sq, su = subtract_amounts(pq, pu, rq, ru)
+                    if sq is not None and sq > 0:
+                        pantry_item.amount = format_amount(sq, su)
+                        pantry_item.save()
+                    else:
+                        pantry_item.delete()
+                else:
+                    # Amounts not parseable — fall back to deleting the entry
+                    pantry_item.delete()
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/recipes/'))
 
 

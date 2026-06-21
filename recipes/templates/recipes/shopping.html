@@ -16,7 +16,15 @@
                     {% endfor %}
                     </select>
                 </li>
-                <li class="list-inline-item mb-2"> <input type="text" name="measurment" required class="form-control" placeholder="amount (e.g. 2 cups)"> </li>
+                <li class="list-inline-item mb-2">
+                    <input type="number" name="qty" min="0.01" step="any" required
+                           class="form-control" style="width:90px;" placeholder="qty">
+                </li>
+                <li class="list-inline-item mb-2">
+                    <select name="unit" class="form-control" style="width:75px;">
+                        {% for u in units %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
+                    </select>
+                </li>
                 <button type="submit" class="btn btn-primary">Add</button>
         </form>
 

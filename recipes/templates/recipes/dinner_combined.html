@@ -31,27 +31,21 @@
                     </h6>
                     {% for ingredient in component.recipe.ingredient_set.all %}
                     {% with itype=ingredient.ingredient_type %}
-                    {% if itype and itype.id in pantry_type_ids %}
-                        {% with skip=True label="In pantry" %}
-                    {% elif itype and itype.is_staple %}
-                        {% with skip=True label="Staple" %}
-                    {% else %}
-                        {% with skip=False label="" %}
-                    {% endif %}
                     <div style="padding-bottom: 6px;">
                         <input type="checkbox"
                                name="i{{ forloop.parentloop.counter }}x{{ forloop.counter }}"
                                value="{{ ingredient.id }}"
-                               {% if not skip %}checked{% endif %}
+                               {% if not itype or itype.id not in pantry_type_ids and not itype.is_staple %}checked{% endif %}
                                style="width: 16px; height: 16px; vertical-align: middle;">
                         <span style="font-size: 15px;">
                             {{ ingredient.measurment }} {{ ingredient.name }}
-                            {% if label %}
-                            <span class="badge badge-light ml-1" style="font-size:10px; color:#333;">{{ label }}</span>
+                            {% if itype and itype.id in pantry_type_ids %}
+                            <span class="badge badge-light ml-1" style="font-size:10px; color:#333;">In pantry</span>
+                            {% elif itype and itype.is_staple %}
+                            <span class="badge badge-light ml-1" style="font-size:10px; color:#333;">Staple</span>
                             {% endif %}
                         </span>
                     </div>
-                    {% endwith %}
                     {% endwith %}
                     {% empty %}
                     <p class="text-white-50 small"><em>No ingredients listed</em></p>

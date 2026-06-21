@@ -43,13 +43,6 @@
                     {% csrf_token %}
                     {% for ingredient in info.ingredient_set.all %}
                     {% with itype=ingredient.ingredient_type %}
-                    {% if itype and itype.id in pantry_type_ids %}
-                        {% with in_pantry=True is_staple=False %}
-                    {% elif itype and itype.is_staple %}
-                        {% with in_pantry=False is_staple=True %}
-                    {% else %}
-                        {% with in_pantry=False is_staple=False %}
-                    {% endif %}
                     <div class="custom-control custom-checkbox" style="padding-bottom: 10px;">
                         <input type="checkbox"
                                name="select{{ forloop.counter }}"
@@ -57,17 +50,16 @@
                                class="custom-control-input"
                                id="customCheck{{ forloop.counter }}"
                                style="width: 20px; height: 20px;"
-                               {% if not in_pantry and not is_staple %}checked{% endif %}>
+                               {% if not itype or itype.id not in pantry_type_ids and not itype.is_staple %}checked{% endif %}>
                         <label class="custom-control-label" for="customCheck{{ forloop.counter }}">
                             {{ ingredient.measurment }} {{ ingredient.name }}
-                            {% if in_pantry %}
+                            {% if itype and itype.id in pantry_type_ids %}
                             <span class="badge badge-success ml-1" style="font-size:10px;">In pantry</span>
-                            {% elif is_staple %}
+                            {% elif itype and itype.is_staple %}
                             <span class="badge" style="font-size:10px; background:rgba(255,255,255,0.25); color:white;">Staple</span>
                             {% endif %}
                         </label>
                     </div>
-                    {% endwith %}
                     {% endwith %}
                     {% endfor %}
                     <li class="list-inline-item mb-3"><button type="button" class="btn btn-secondary" onclick="eventCheckBox()" id="selectall" name="selectall">Check all boxes</button></li>

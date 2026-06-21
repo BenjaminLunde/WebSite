@@ -284,10 +284,22 @@ def meal_planner(request):
 def dinner_detail(request, dinner_id):
     """Show a dinner page with its components as selectable checkboxes."""
     dinner = get_object_or_404(Dinner, pk=dinner_id)
-    components = dinner.components.select_related('recipe').prefetch_related(
+    components_qs = dinner.components.select_related('recipe').prefetch_related(
         'recipe__recipe_tags'
-    ).order_by('role', 'order', 'id')
-    return render(request, 'recipes/dinner.html', {'dinner': dinner, 'components': components})
+    ).order_by('order', 'id')
+
+    # Group by role, preserving the order in which each role first appears.
+    # The role whose first component has the lowest 'order' number comes first.
+    role_groups = {}
+    role_order = []
+    for comp in components_qs:
+        if comp.role not in role_groups:
+            role_groups[comp.role] = []
+            role_order.append(comp.role)
+        role_groups[comp.role].append(comp)
+
+    grouped = [(role, role_groups[role]) for role in role_order]
+    return render(request, 'recipes/dinner.html', {'dinner': dinner, 'grouped': grouped})
 
 
 def dinner_combined(request, dinner_id):

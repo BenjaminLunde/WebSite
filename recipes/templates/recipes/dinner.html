@@ -21,16 +21,14 @@
     <form action="/recipes/dinners/{{ dinner.id }}/combined/" method="post">
         {% csrf_token %}
 
-        {% regroup components by role as role_groups %}
-
-        {% for group in role_groups %}
+        {% for role, components in grouped %}
 
         <h3 class="mt-4 mb-3" style="border-bottom: 2px solid #dee2e6; padding-bottom: 8px;">
-            {{ group.grouper }}
+            {{ role }}
         </h3>
 
         <div class="row">
-            {% for component in group.list %}
+            {% for component in components %}
             <div class="col-lg-3 col-md-4 col-sm-6 col-12 mb-4">
                 <div class="card h-100 shadow-sm" style="border-radius: 8px; overflow: hidden;">
                     {% if component.recipe.photo %}
@@ -69,7 +67,7 @@
         <p class="text-muted">No recipes have been added to this dinner yet.</p>
         {% endfor %}
 
-        {% if components %}
+        {% if grouped %}
         <div class="mt-3 mb-5">
             <button type="submit" class="btn btn-primary btn-lg">
                 <i class="fas fa-utensils mr-2"></i> Open combined dinner view

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if tagg_list %}
+
+<div style="padding-top: 40px; padding-left:60px;">
+    <h1>Pantry</h1>
+    <ul class="list-inline list-unstyled mt-5" style="padding-right:60px;">
+        <form action="/recipes/pantry/" method="post">
+                {% csrf_token %}
+                <li class="list-inline-item mb-2">
+                    <label for="tagg">Add something to the pantry</label>
+                    <select class="form-control" name="tagg" id="select">
+                    {% for tagg in tagg_list %}
+                    <option value="{{ tagg.id }}">{{ tagg.name }}</option>
+                    {% endfor %}
+                    </select>
+                </li>
+                <li class="list-inline-item mb-2"> <input type="text" name="name" required class="form-control" placeholder="name"> </li>
+                <li class="list-inline-item mb-2"> <input type="text" name="amount" required class="form-control" placeholder="amount"> </li>
+                <button type="submit" class="btn btn-primary">Add</button>
+        </form>
+
+        <a href="/recipes/pantry/delete_all/"><button type="button" class="btn btn-danger float-right">Empty pantry</button></a>
+    </ul>
+
+    <div class="row pt-5 pb-5" style="width: 100%;">
+        {% for tagg in tagg_list %}
+        <div class="text-white bg-primary order-lg-2 col-lg-3 border border-white">
+            <div class="card-body pt-4 pl-4 pr-4" style="padding-bottom: 10px; padding-left: 10px;">
+                <h6 class="card-title" style="text-align:center;">{{tagg.name}}</h6>
+                <hr style="height:2px;border-width:0;color:white;background-color:white">
+                <div class="tab-content">
+                    {% for item in pantry_list %}
+                    {% if item.tagg == tagg %}
+                    <div class="custom-control custom-checkbox">
+                        <ul class="list-inline list-unstyled mt-4">
+                            <li class="list-inline-item">
+                                <span style="font-size: 16px;">{{ item.amount }} {{ item.name }}</span>
+                                <br><small class="text-white-50">{{ item.added_date|timesince }} ago</small>
+                            </li>
+                            <li class="list-inline-item float-right">
+                                <a href="/recipes/pantry/delete/{{item.id}}/"><button type="button" class="btn btn-primary" style="padding:2px;"> Delete <i class="fa fa-trash -fluid" style="padding-left: 10px;"></i> </button></a>
+                            </li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% else %}
+    <p>No categories available. Ask the admin to add some.</p>
+{% endif %}
+{% endblock %}

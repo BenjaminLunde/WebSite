@@ -34,10 +34,17 @@
                 <div class="tab-content">
                     {% for item in shop_list %}
                     {% if item.ingredient.tagg == tagg %}
-                    <div class="custom-control custom-checkbox"> 
+                    <div class="custom-control custom-checkbox">
                         <ul class="list-inline list-unstyled mt-4">
                             <li class="list-inline-item"> <input type="checkbox" class="custom-control-input" id="{{tagg.id}}{{ forloop.counter }}" style="width: 20px; height: 20px;"> <label class="custom-control-label" for="{{tagg.id}}{{ forloop.counter }}" style="font-size: 16px;">{{ item.ingredient.measurment }} {{ item.ingredient.name }}</label> </input>  </li>
-                            <li class="list-inline-item float-right"><a href="/recipes/delete/{{item.id}}"> <button type="button" class="btn btn-primary" style="padding:2px;"> Delete <i class="fa fa-trash -fluid" style="padding-left: 10px;"></i> </button></a></li>
+                            <li class="list-inline-item float-right">
+                                <form action="/recipes/pantry/add/" method="post" style="display:inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="shop_item_id" value="{{ item.id }}">
+                                    <button type="submit" class="btn btn-success" style="padding:2px;" title="Move to Pantry"><i class="fas fa-box-open"></i></button>
+                                </form>
+                                <a href="/recipes/delete/{{item.id}}"> <button type="button" class="btn btn-primary" style="padding:2px;"> Delete <i class="fa fa-trash -fluid" style="padding-left: 10px;"></i> </button></a>
+                            </li>
                         </ul>
                     </div>
                     {% endif %}

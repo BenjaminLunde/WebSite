@@ -3,6 +3,17 @@
 
 
 {% block content %}
+
+<!-- Tag filter pills -->
+{% if all_tags %}
+<div style="padding: 20px 40px 0 40px;">
+    <a href="/recipes/" class="btn btn-sm {% if not selected_tag %}btn-primary{% else %}btn-outline-primary{% endif %} mr-1 mb-2">All</a>
+    {% for tag in all_tags %}
+    <a href="/recipes/?tag={{ tag.id }}" class="btn btn-sm {% if selected_tag.id == tag.id %}btn-primary{% else %}btn-outline-primary{% endif %} mr-1 mb-2">{{ tag.name }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+
 {% if latest_info_list %}
 <div class="row filter" style="width: 100%;">
     {% for info in latest_info_list %}
@@ -16,12 +27,17 @@
                 </ul>
                 <h2 class="blueText mb-4 mt-3"> {{ info.title }} </h2>
                 <h6 class="mb-4">{{ info.time }}</h6>
+                <div>
+                    {% for tag in info.recipe_tags.all %}
+                    <span class="badge badge-secondary mr-1">{{ tag.name }}</span>
+                    {% endfor %}
+                </div>
             </div>
         </a>
     </div>
     {% endfor %}
 </div>
-    
+
 {% else %}
     <p>No recipes are available.</p>
 {% endif %}

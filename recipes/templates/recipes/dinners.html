@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div style="padding: 30px 40px 40px 40px;">
+
+    {% if dinner_list %}
+    <div class="row">
+        {% for dinner in dinner_list %}
+        <div class="col-lg-4 col-md-6 col-12 mb-4">
+            <a href="/recipes/dinners/{{ dinner.id }}/" class="text-decoration-none">
+                <div class="card h-100 shadow-sm" style="border-radius: 8px; overflow: hidden;">
+                    {% if dinner.photo %}
+                    <img class="card-img-top" src="/media/{{ dinner.photo }}"
+                         style="height: 220px; object-fit: cover;" alt="{{ dinner.title }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h4 class="blueText mb-1">{{ dinner.title }}</h4>
+                        {% if dinner.description %}
+                        <p class="text-muted small mb-2">{{ dinner.description }}</p>
+                        {% endif %}
+                        <span class="badge badge-primary">
+                            {{ dinner.components.count }} recipe{{ dinner.components.count|pluralize }}
+                        </span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No dinners yet. Add one in the admin.</p>
+    {% endif %}
+
+</div>
+
+{% endblock %}

@@ -62,6 +62,8 @@ function eventCheckBox() {
         <a class="nav-link" href="/admin/recipes/info/add/"><i class="fas fa-plus-circle" style="color: white; font-size: 30px;"></i></a>
         {% endif %}
         <a class="navbar-brand mx-auto" href="/recipes/" style="font-size:30px;">Ben & Jenny's</a>
+        <a class="nav-link" href="/recipes/" style="color: white; font-size: 18px;">Dinners</a>
+        <a class="nav-link" href="/recipes/recipes/" style="color: white; font-size: 18px;">Recipes</a>
         {% if user.is_authenticated %}
         <a class="nav-link" href="/recipes/account/" style="color: white; font-size: 18px;"> {{ user.username }} </a>
             <form method="post" action="/recipes/accounts/logout/" style="display:inline;">

@@ -5,7 +5,8 @@ from . import views
 
 app_name = 'recipes'
 urlpatterns = [
-    path('', views.index, name='index'),
+    path('', views.dinners, name='index'),
+    path('recipes/', views.index, name='recipes'),
     path('<int:info_id>/', views.get_one, name="get_one"),
     path('shopping/', views.shopping, name="shopping"),
     path('accounts/', include('django.contrib.auth.urls')),

@@ -1,7 +1,5 @@
 {% extends 'base.html' %}
 
-
-
 {% block content %}
 
 <!-- Tag filter pills -->
@@ -14,42 +12,8 @@
 </div>
 {% endif %}
 
-{% if dinner_list %}
-<div style="padding: 30px 40px 10px 40px;">
-    <h2 class="blueText mb-3">Dinners</h2>
-    <div class="row">
-        {% for dinner in dinner_list %}
-        <div class="col-lg-4 col-md-6 col-12 mb-4">
-            <a href="/recipes/dinners/{{ dinner.id }}/" class="text-decoration-none">
-                <div class="card h-100 shadow-sm" style="border-radius: 8px; overflow: hidden;">
-                    {% if dinner.photo %}
-                    <img class="card-img-top" src="/media/{{ dinner.photo }}"
-                         style="height: 200px; object-fit: cover;" alt="{{ dinner.title }}">
-                    {% endif %}
-                    <div class="card-body">
-                        <h4 class="blueText mb-1">{{ dinner.title }}</h4>
-                        {% if dinner.description %}
-                        <p class="text-muted small mb-2">{{ dinner.description }}</p>
-                        {% endif %}
-                        <span class="badge badge-primary">
-                            {{ dinner.components.count }} recipe{{ dinner.components.count|pluralize }}
-                        </span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-<hr style="margin: 0 40px 10px 40px;">
-{% endif %}
-
 {% if latest_info_list %}
-<div style="padding: 10px 40px 0 40px;">
-    <h2 class="blueText mb-3">Recipes</h2>
-</div>
 <div class="row filter" style="width: 100%;">
-
     {% for info in latest_info_list %}
     <div class="col-lg-4 col-md-4 col-sm-4 col-12 mb-2">
         <a href="/recipes/{{ info.id }}/">
@@ -71,11 +35,8 @@
     </div>
     {% endfor %}
 </div>
-
 {% else %}
     <p>No recipes are available.</p>
 {% endif %}
 
 {% endblock %}
-
-

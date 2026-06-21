@@ -28,14 +28,17 @@ def index(request):
     else:
         recipe_list = Info.objects.order_by('-pub_date')
         selected_tag = None
-    dinner_list = Dinner.objects.order_by('-pub_date').prefetch_related('components')
     context = {
         'latest_info_list': recipe_list,
         'all_tags': all_tags,
         'selected_tag': selected_tag,
-        'dinner_list': dinner_list,
     }
     return render(request, 'recipes/index.html', context)
+
+
+def dinners(request):
+    dinner_list = Dinner.objects.order_by('-pub_date').prefetch_related('components')
+    return render(request, 'recipes/dinners.html', {'dinner_list': dinner_list})
 
 
 def get_one(request, info_id):

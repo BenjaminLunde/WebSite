@@ -11,7 +11,7 @@ from django.http import HttpResponseRedirect
 
 
 from django.contrib.auth.models import User
-from .models import Info, Tagg, RecipeTag, Ingredient, IngredientForm, IngredientToShop, PantryItem
+from .models import Info, Tagg, RecipeTag, Ingredient, IngredientType, IngredientForm, IngredientToShop, PantryItem
 
 # Create your views here.
 

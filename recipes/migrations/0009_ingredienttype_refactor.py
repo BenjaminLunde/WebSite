@@ -6,23 +6,36 @@ import django.db.models.deletion
 def create_ingredient_types(apps, schema_editor):
     """
     For every existing Ingredient, create a matching IngredientType
-    (using the ingredient's name and tagg), then link back.
-    Deduplicates by name — same name = same IngredientType.
+    (using the ingredient's name and tagg_id), then link back.
+    Deduplicates by lowercased name.
+    Uses raw _id fields to avoid ORM complexity on historical models.
     """
     Ingredient = apps.get_model('recipes', 'Ingredient')
     IngredientType = apps.get_model('recipes', 'IngredientType')
 
-    name_to_type = {}
-    for ing in Ingredient.objects.select_related('tagg').all():
-        key = ing.name.strip().lower()
-        if key not in name_to_type:
+    name_to_type_id = {}
+    for ing in Ingredient.objects.all():
+        # Safely get the name — CharField should never be None, but guard anyway
+        raw_name = ing.name if ing.name else ''
+        clean_name = raw_name.strip()
+        key = clean_name.lower()
+
+        # Give truly nameless ingredients a placeholder so they don't collide
+        if not key:
+            clean_name = f'Ingredient {ing.pk}'
+            key = clean_name.lower()
+
+        if key not in name_to_type_id:
             itype = IngredientType.objects.create(
-                name=ing.name.strip(),
-                tagg=ing.tagg,
+                name=clean_name,
+                tagg_id=ing.tagg_id,   # use the raw FK column — no extra query
             )
-            name_to_type[key] = itype
-        ing.ingredient_type = name_to_type[key]
-        ing.save()
+            name_to_type_id[key] = itype.pk
+
+        # Set the FK by PK to avoid any ORM state issues
+        Ingredient.objects.filter(pk=ing.pk).update(
+            ingredient_type_id=name_to_type_id[key]
+        )
 
 
 class Migration(migrations.Migration):

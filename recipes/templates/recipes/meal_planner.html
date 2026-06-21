@@ -35,8 +35,8 @@
         <div class="col-lg-4 col-md-6 col-sm-6 col-12 mb-4">
             <a href="/recipes/{{ info.id }}/" style="text-decoration:none; color:inherit;">
                 <div class="card h-100 shadow-sm">
-                    <img class="card-img-top" src="/media/{{ info.photo }}"
-                         style="height: 200px; object-fit: cover;" alt="{{ info.title }}">
+                    {% if info.photo %}<img class="card-img-top" src="/media/{{ info.photo }}"
+                         style="height: 200px; object-fit: cover;" alt="{{ info.title }}">{% endif %}
                     <div class="card-body">
                         <h5 class="card-title blueText">{{ info.title }}</h5>
                         <p class="card-text text-muted"><i class="fas fa-clock"></i> {{ info.time }}</p>

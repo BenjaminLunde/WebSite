@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-{% if tagg_list %}
+{% if ingredient_type_list %}
 
 <div style="padding-top: 40px; padding-left:60px;">
     <h1>Pantry</h1>
@@ -9,15 +9,14 @@
         <form action="/recipes/pantry/" method="post">
                 {% csrf_token %}
                 <li class="list-inline-item mb-2">
-                    <label for="tagg">Add something to the pantry</label>
-                    <select class="form-control" name="tagg" id="select">
-                    {% for tagg in tagg_list %}
-                    <option value="{{ tagg.id }}">{{ tagg.name }}</option>
+                    <label for="ingredient_type">Add something to the pantry</label>
+                    <select class="form-control" name="ingredient_type" id="ingredient_type">
+                    {% for itype in ingredient_type_list %}
+                    <option value="{{ itype.id }}">{{ itype.name }}</option>
                     {% endfor %}
                     </select>
                 </li>
-                <li class="list-inline-item mb-2"> <input type="text" name="name" required class="form-control" placeholder="name"> </li>
-                <li class="list-inline-item mb-2"> <input type="text" name="amount" required class="form-control" placeholder="amount"> </li>
+                <li class="list-inline-item mb-2"> <input type="text" name="amount" required class="form-control" placeholder="amount (e.g. 500g)"> </li>
                 <button type="submit" class="btn btn-primary">Add</button>
         </form>
 
@@ -36,8 +35,19 @@
                     <div class="custom-control custom-checkbox">
                         <ul class="list-inline list-unstyled mt-4">
                             <li class="list-inline-item">
-                                <span style="font-size: 16px;">{{ item.amount }} {{ item.name }}</span>
-                                <br><small class="text-white-50">{{ item.added_date|timesince }} ago</small>
+                                <span style="font-size: 16px;">
+                                    {{ item.amount }} {{ item.name }}
+                                    {% if item.urgency == 'expired' %}
+                                    <span class="badge badge-danger ml-1">Expired</span>
+                                    {% elif item.urgency == 'warning' %}
+                                    <span class="badge badge-warning ml-1">Use soon</span>
+                                    {% endif %}
+                                </span>
+                                <br><small class="text-white-50">{{ item.added_date|timesince }} ago
+                                    {% if item.ingredient_type.shelf_life_days %}
+                                    · {{ item.ingredient_type.shelf_life_days }} day shelf life
+                                    {% endif %}
+                                </small>
                             </li>
                             <li class="list-inline-item float-right">
                                 <a href="/recipes/pantry/delete/{{item.id}}/"><button type="button" class="btn btn-primary" style="padding:2px;"> Delete <i class="fa fa-trash -fluid" style="padding-left: 10px;"></i> </button></a>
@@ -54,6 +64,6 @@
 </div>
 
 {% else %}
-    <p>No categories available. Ask the admin to add some.</p>
+    <p>No ingredients in the catalog yet. Ask the admin to add some ingredient types first.</p>
 {% endif %}
 {% endblock %}

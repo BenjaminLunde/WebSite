@@ -5,7 +5,7 @@
     <div class="row" style="width: 100%; max-height:100%;">
         <div class="col-lg-6 d-flex align-items-center">
             <div class="pl-5 pr-5 pb-5 pt-5" style="width:100%">
-                <img class="img-fluid mb-2" style="width:100%; height:auto; object-fit:cover;" src="/media/{{ info.photo }}">
+                {% if info.photo %}<img class="img-fluid mb-2" style="width:100%; height:auto; object-fit:cover;" src="/media/{{ info.photo }}">{% endif %}
             </div>
         </div>
         
@@ -48,18 +48,7 @@
                     {% endfor %}
                     <li class="list-inline-item mb-3"><button type="button" class="btn btn-secondary" onclick="eventCheckBox()" id="selectall" name="selectall">Check all boxes</button></li>
                     <li class="list-inline-item mb-3"><button type="submit" class="btn btn-secondary">Add selected to Shoppinglist</button></li>
-                    </form>
-
-                    <hr style="height:2px;border-width:0;color:white;background-color:white">
-                    <h6 style="text-align:center; margin-top: 16px;">Remove used from Pantry</h6>
-                    <form action="/recipes/remove_used/" method="post">
-                    {% csrf_token %}
-                    {% for ingredient in info.ingredient_set.all %}
-                    <div class="custom-control custom-checkbox" style="padding-bottom: 10px;">
-                        <input type="checkbox" name="used{{ forloop.counter }}" value="{{ingredient.id}}" class="custom-control-input" id="usedCheck{{ forloop.counter }}" style="width: 20px; height: 20px;"> <label class="custom-control-label" for="usedCheck{{ forloop.counter }}">{{ ingredient.name }}</label></input>
-                    </div>
-                    {% endfor %}
-                    <li class="list-inline-item mb-3"><button type="submit" class="btn btn-warning">Remove selected from Pantry</button></li>
+                    <li class="list-inline-item mb-3"><button type="submit" class="btn btn-warning" formaction="/recipes/remove_used/">Remove selected from Pantry</button></li>
                     </form>
                 </div>
             </div>    
@@ -88,27 +77,44 @@
     {% if related %}
     <div class="row pb-5" style="width: 100%; padding-left: 40px; padding-right: 40px;">
         <div class="col-12">
-            <h4 class="mb-4">Goes well with</h4>
+            <h4 class="mb-3">Plan this dinner</h4>
+            <p class="text-muted">Select which sides and sauces to include, then open a combined view with all ingredients and instructions.</p>
         </div>
+        <div class="col-12">
+        <form action="/recipes/{{ info.id }}/combined/" method="post">
+        {% csrf_token %}
+        <div class="row">
         {% for r in related %}
         <div class="col-lg-3 col-md-4 col-sm-6 col-12 mb-3">
-            <a href="/recipes/{{ r.id }}/" style="text-decoration:none; color:inherit;">
-                <div class="card h-100 shadow-sm">
-                    <img class="card-img-top" src="/media/{{ r.photo }}"
-                         style="height: 160px; object-fit: cover;" alt="{{ r.title }}">
-                    <div class="card-body">
-                        <h6 class="card-title blueText">{{ r.title }}</h6>
-                        <small class="text-muted"><i class="fas fa-clock"></i> {{ r.time }}</small>
-                        <div class="mt-1">
-                            {% for tag in r.recipe_tags.all %}
-                            <span class="badge badge-secondary" style="font-size:10px;">{{ tag.name }}</span>
-                            {% endfor %}
-                        </div>
+            <div class="card h-100 shadow-sm">
+                {% if r.photo %}<img class="card-img-top" src="/media/{{ r.photo }}"
+                     style="height: 140px; object-fit: cover;" alt="{{ r.title }}">{% endif %}
+                <div class="card-body">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input"
+                               id="rel{{ r.id }}" name="related_ids" value="{{ r.id }}"
+                               {% if related|length <= 2 %}checked{% endif %}>
+                        <label class="custom-control-label" for="rel{{ r.id }}">
+                            <strong>{{ r.title }}</strong>
+                        </label>
                     </div>
+                    <small class="text-muted d-block mt-1"><i class="fas fa-clock"></i> {{ r.time }}</small>
+                    <div class="mt-1">
+                        {% for tag in r.recipe_tags.all %}
+                        <span class="badge badge-secondary" style="font-size:10px;">{{ tag.name }}</span>
+                        {% endfor %}
+                    </div>
+                    <a href="/recipes/{{ r.id }}/" class="btn btn-link btn-sm p-0 mt-1">View recipe →</a>
                 </div>
-            </a>
+            </div>
         </div>
         {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">
+            <i class="fas fa-utensils mr-1"></i> Open combined dinner view
+        </button>
+        </form>
+        </div>
     </div>
     {% endif %}
     {% endwith %}

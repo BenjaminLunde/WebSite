@@ -48,24 +48,29 @@ def shopping(request):
         current_user = request.user
 
         if request.method == 'POST':
-            tagg = Tagg.objects.get(pk=request.POST['tagg'])
-            name = request.POST['name']
-            amount = request.POST['measurment']
+            itype = IngredientType.objects.filter(pk=request.POST.get('ingredient_type')).first()
+            amount = request.POST.get('measurment', '').strip()
+            if itype and amount:
+                ingredient = Ingredient()
+                ingredient.ingredient_type = itype
+                ingredient.measurment = amount
+                ingredient.save()
 
-            ingredient = Ingredient()
-            ingredient.tagg = tagg
-            ingredient.name = name
-            ingredient.measurment = amount
-            ingredient.save()
-
-            toShop = IngredientToShop()
-            toShop.shopper = current_user
-            toShop.ingredient = ingredient
-            toShop.save()
+                toShop = IngredientToShop()
+                toShop.shopper = current_user
+                toShop.ingredient = ingredient
+                toShop.save()
 
         tagg_list = Tagg.objects.order_by('id')
-        shop_list = IngredientToShop.objects.filter(shopper=current_user)
-        context = {'tagg_list': tagg_list, 'shop_list': shop_list, }
+        ingredient_type_list = IngredientType.objects.order_by('name')
+        shop_list = IngredientToShop.objects.filter(shopper=current_user).select_related(
+            'ingredient__ingredient_type__tagg'
+        )
+        context = {
+            'tagg_list': tagg_list,
+            'ingredient_type_list': ingredient_type_list,
+            'shop_list': shop_list,
+        }
         return render(request, 'recipes/shopping.html', context)
     else:
         return HttpResponseRedirect("/recipes/")
@@ -111,21 +116,25 @@ def pantry(request):
         current_user = request.user
 
         if request.method == 'POST':
-            tagg_id = request.POST.get('tagg')
-            name = request.POST.get('name', '').strip()
+            itype = IngredientType.objects.filter(pk=request.POST.get('ingredient_type')).first()
             amount = request.POST.get('amount', '').strip()
-            if name and amount:
-                tagg = Tagg.objects.filter(pk=tagg_id).first()
+            if itype and amount:
                 PantryItem.objects.create(
                     user=current_user,
-                    name=name,
+                    ingredient_type=itype,
                     amount=amount,
-                    tagg=tagg,
                 )
 
         tagg_list = Tagg.objects.order_by('id')
-        pantry_list = PantryItem.objects.filter(user=current_user).order_by('added_date')
-        context = {'tagg_list': tagg_list, 'pantry_list': pantry_list}
+        ingredient_type_list = IngredientType.objects.order_by('name')
+        pantry_list = PantryItem.objects.filter(user=current_user).select_related(
+            'ingredient_type__tagg'
+        ).order_by('added_date')
+        context = {
+            'tagg_list': tagg_list,
+            'ingredient_type_list': ingredient_type_list,
+            'pantry_list': pantry_list,
+        }
         return render(request, 'recipes/pantry.html', context)
     else:
         return HttpResponseRedirect('/recipes/')
@@ -136,12 +145,11 @@ def add_to_pantry(request):
     if request.user.is_authenticated and request.method == 'POST':
         shop_item_id = request.POST.get('shop_item_id')
         obj = IngredientToShop.objects.filter(id=shop_item_id, shopper=request.user).first()
-        if obj:
+        if obj and obj.ingredient.ingredient_type:
             PantryItem.objects.create(
                 user=request.user,
-                name=obj.ingredient.name,
+                ingredient_type=obj.ingredient.ingredient_type,
                 amount=obj.ingredient.measurment,
-                tagg=obj.ingredient.tagg,
             )
             obj.delete()
     return HttpResponseRedirect('/recipes/pantry/')
@@ -162,20 +170,59 @@ def delete_all_pantry(request):
 
 
 def remove_used_ingredients(request):
-    """Remove selected recipe ingredients from the user's pantry by name match."""
+    """Remove selected recipe ingredients from the user's pantry by ingredient_type FK."""
     if request.user.is_authenticated and request.method == 'POST':
         ingredients = request.POST
         list_ing = iter(ingredients)
         next(list_ing)  # skip csrf token
         for item in list_ing:
             ingredient = Ingredient.objects.filter(pk=request.POST[item]).first()
-            if ingredient:
-                # Case-insensitive name match against pantry items
+            if ingredient and ingredient.ingredient_type:
                 PantryItem.objects.filter(
                     user=request.user,
-                    name__iexact=ingredient.name,
+                    ingredient_type=ingredient.ingredient_type,
                 ).delete()
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/recipes/'))
+
+
+def combined_dinner(request, info_id):
+    """
+    Show a combined view of a main recipe + selected related recipes.
+    POST: receive checked related-recipe IDs and display the merged result.
+    GET: redirect back to the recipe.
+    """
+    main = get_object_or_404(Info, pk=info_id)
+    if request.method != 'POST':
+        return HttpResponseRedirect(f'/recipes/{info_id}/')
+
+    # Collect which related recipes the user selected
+    selected_ids = request.POST.getlist('related_ids')
+    related = list(Info.objects.filter(id__in=selected_ids).prefetch_related(
+        'ingredient_set__ingredient_type', 'instruction_set'
+    ))
+
+    context = {
+        'main': main,
+        'selected': related,
+    }
+    return render(request, 'recipes/combined_dinner.html', context)
+
+
+def add_combined_to_shop(request):
+    """Add ingredients from multiple recipes (main + selected sides) to the shopping list."""
+    if not request.user.is_authenticated or request.method != 'POST':
+        return HttpResponseRedirect('/recipes/shopping/')
+
+    recipe_ids = request.POST.getlist('recipe_ids')
+    for recipe_id in recipe_ids:
+        recipe = Info.objects.filter(pk=recipe_id).first()
+        if recipe:
+            for ingredient in recipe.ingredient_set.all():
+                IngredientToShop.objects.create(
+                    shopper=request.user,
+                    ingredient=ingredient,
+                )
+    return HttpResponseRedirect('/recipes/shopping/')
 
 
 def meal_planner(request):
@@ -191,8 +238,14 @@ def meal_planner(request):
         user_request = request.POST.get('user_request', '').strip()
         if user_request:
             from .ai_planner import suggest_meals
-            recipes = Info.objects.prefetch_related('recipe_tags', 'ingredient_set').all()
-            pantry_items = list(PantryItem.objects.filter(user=request.user).order_by('added_date'))
+            recipes = Info.objects.prefetch_related(
+                'recipe_tags', 'ingredient_set__ingredient_type'
+            ).all()
+            pantry_items = list(
+                PantryItem.objects.filter(user=request.user)
+                .select_related('ingredient_type')
+                .order_by('added_date')
+            )
 
             ids, reasoning, error = suggest_meals(user_request, recipes, pantry_items)
             if ids:

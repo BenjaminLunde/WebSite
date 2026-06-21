@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="padding-top: 40px; padding-left: 60px; padding-right: 60px;">
+
+    <h1 class="blueText mb-1">{{ main.title }}</h1>
+    {% for tag in main.recipe_tags.all %}
+    <span class="badge badge-secondary mr-1">{{ tag.name }}</span>
+    {% endfor %}
+    {% if selected %}
+    <span class="text-muted ml-2">+ {{ selected|length }} side{% if selected|length != 1 %}s{% endif %}</span>
+    {% endif %}
+
+    <div class="row mt-5" style="width: 100%;">
+
+        <!-- All ingredients merged -->
+        <div class="text-white bg-primary col-lg-4 order-lg-2">
+            <div class="card-body pt-5 pl-5 pr-5">
+                <h4 class="card-title" style="text-align:center;">All Ingredients</h4>
+                <hr style="height:2px;border-width:0;color:white;background-color:white">
+
+                <form action="/recipes/add_combined_to_shop/" method="post">
+                {% csrf_token %}
+                <!-- Pass all recipe IDs so the view knows which to add -->
+                <input type="hidden" name="recipe_ids" value="{{ main.id }}">
+                {% for r in selected %}
+                <input type="hidden" name="recipe_ids" value="{{ r.id }}">
+                {% endfor %}
+
+                <!-- Main recipe ingredients -->
+                <h6 class="mt-3 mb-1" style="border-bottom:1px solid rgba(255,255,255,0.4); padding-bottom:4px;">
+                    {{ main.title }}
+                </h6>
+                {% for ingredient in main.ingredient_set.all %}
+                <div style="padding-bottom: 6px;">
+                    <input type="checkbox" checked style="width:16px;height:16px;vertical-align:middle;">
+                    <span style="font-size:15px;"> {{ ingredient.measurment }} {{ ingredient.name }}</span>
+                </div>
+                {% empty %}
+                <p class="text-white-50"><em>No ingredients listed</em></p>
+                {% endfor %}
+
+                <!-- Selected side recipe ingredients -->
+                {% for r in selected %}
+                <h6 class="mt-3 mb-1" style="border-bottom:1px solid rgba(255,255,255,0.4); padding-bottom:4px;">
+                    {{ r.title }}
+                </h6>
+                {% for ingredient in r.ingredient_set.all %}
+                <div style="padding-bottom: 6px;">
+                    <input type="checkbox" checked style="width:16px;height:16px;vertical-align:middle;">
+                    <span style="font-size:15px;"> {{ ingredient.measurment }} {{ ingredient.name }}</span>
+                </div>
+                {% empty %}
+                <p class="text-white-50"><em>No ingredients listed</em></p>
+                {% endfor %}
+                {% endfor %}
+
+                <div class="mt-4 mb-3">
+                    <button type="submit" class="btn btn-secondary w-100">
+                        <i class="fas fa-shopping-cart mr-1"></i> Add all to Shopping list
+                    </button>
+                </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- All instructions in sections -->
+        <div class="order-lg-1 col-lg-7">
+            <div class="pt-5 pb-5 pl-5 pr-5">
+
+                <!-- Main recipe instructions -->
+                <h4 style="text-align:center;">{{ main.title }}</h4>
+                <table class="table table-hover mb-5">
+                    <tbody>
+                        {% for instruction in main.instruction_set.all %}
+                        <tr>
+                            <th scope="row">{{ forloop.counter }}</th>
+                            <td>{{ instruction.text }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td class="text-muted"><em>No instructions listed</em></td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Selected side recipe instructions -->
+                {% for r in selected %}
+                <h4 style="text-align:center;" class="mt-4">{{ r.title }}</h4>
+                <table class="table table-hover mb-5">
+                    <tbody>
+                        {% for instruction in r.instruction_set.all %}
+                        <tr>
+                            <th scope="row">{{ forloop.counter }}</th>
+                            <td>{{ instruction.text }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td class="text-muted"><em>No instructions listed</em></td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endfor %}
+
+            </div>
+        </div>
+
+    </div>
+
+    <div class="pb-5">
+        <a href="/recipes/{{ main.id }}/" class="btn btn-outline-primary">← Back to {{ main.title }}</a>
+    </div>
+
+</div>
+{% endblock %}

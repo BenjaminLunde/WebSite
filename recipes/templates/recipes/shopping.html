@@ -8,16 +8,15 @@
     <ul class="list-inline list-unstyled mt-5" style="padding-right:60px;">
         <form action="/recipes/shopping/" method="post">
                 {% csrf_token %}
-                <li class="list-inline-item mb-2"> 
-                    <label for="tagg">Add something to the shopping list</label>
-                    <select class="form-control" name ="tagg" id="select">
-                    {% for tagg in tagg_list %}
-                    <option value="{{ tagg.id }}">{{ tagg.name }}</option>
+                <li class="list-inline-item mb-2">
+                    <label for="ingredient_type">Add something to the shopping list</label>
+                    <select class="form-control" name="ingredient_type" id="ingredient_type">
+                    {% for itype in ingredient_type_list %}
+                    <option value="{{ itype.id }}">{{ itype.name }}</option>
                     {% endfor %}
                     </select>
                 </li>
-                <li class="list-inline-item mb-2"> <input type="text" name ="name" required class="form-control" placeholder="name"> </li>
-                <li class="list-inline-item mb-2"> <input type="text" name ="measurment" required class="form-control" placeholder="amount"> </li>
+                <li class="list-inline-item mb-2"> <input type="text" name="measurment" required class="form-control" placeholder="amount (e.g. 2 cups)"> </li>
                 <button type="submit" class="btn btn-primary">Add</button>
         </form>
 

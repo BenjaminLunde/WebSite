@@ -19,4 +19,6 @@ urlpatterns = [
     path('pantry/delete_all/', views.delete_all_pantry, name='delete_all_pantry'),
     path('remove_used/', views.remove_used_ingredients, name='remove_used'),
     path('meal-planner/', views.meal_planner, name='meal_planner'),
+    path('<int:info_id>/combined/', views.combined_dinner, name='combined_dinner'),
+    path('add_combined_to_shop/', views.add_combined_to_shop, name='add_combined_to_shop'),
 ]

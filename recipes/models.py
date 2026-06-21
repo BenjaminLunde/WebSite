@@ -80,6 +80,10 @@ class IngredientType(models.Model):
         null=True, blank=True,
         help_text="Expected shelf life in days (used to warn when pantry items get old)"
     )
+    is_staple = models.BooleanField(
+        default=False,
+        help_text="Always available (water, salt, etc.) — unchecked by default on all recipe pages"
+    )
 
     class Meta:
         ordering = ['name']

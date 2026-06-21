@@ -16,7 +16,7 @@
                 <h4 class="card-title" style="text-align: center;">All Ingredients</h4>
                 <hr style="height: 2px; border-width: 0; color: white; background-color: white;">
 
-                <form action="/recipes/dinners/add_to_shop/" method="post">
+                <form action="/recipes/dinners/add_to_shop/" method="post" id="dinnerIngForm">
                     {% csrf_token %}
                     {% for component in components %}
                     <input type="hidden" name="component_ids" value="{{ component.id }}">
@@ -30,24 +30,52 @@
                            class="text-white-50 small ml-1" style="font-weight: normal;">↗</a>
                     </h6>
                     {% for ingredient in component.recipe.ingredient_set.all %}
+                    {% with itype=ingredient.ingredient_type %}
+                    {% if itype and itype.id in pantry_type_ids %}
+                        {% with skip=True label="In pantry" %}
+                    {% elif itype and itype.is_staple %}
+                        {% with skip=True label="Staple" %}
+                    {% else %}
+                        {% with skip=False label="" %}
+                    {% endif %}
                     <div style="padding-bottom: 6px;">
-                        <input type="checkbox" checked
+                        <input type="checkbox"
+                               name="i{{ forloop.parentloop.counter }}x{{ forloop.counter }}"
+                               value="{{ ingredient.id }}"
+                               {% if not skip %}checked{% endif %}
                                style="width: 16px; height: 16px; vertical-align: middle;">
                         <span style="font-size: 15px;">
                             {{ ingredient.measurment }} {{ ingredient.name }}
+                            {% if label %}
+                            <span class="badge badge-light ml-1" style="font-size:10px; color:#333;">{{ label }}</span>
+                            {% endif %}
                         </span>
                     </div>
+                    {% endwith %}
+                    {% endwith %}
                     {% empty %}
                     <p class="text-white-50 small"><em>No ingredients listed</em></p>
                     {% endfor %}
                     {% endfor %}
 
-                    <div class="mt-4 mb-3">
-                        <button type="submit" class="btn btn-secondary w-100">
+                    <div class="mt-4 mb-2">
+                        <button type="button" class="btn btn-secondary w-100 mb-2"
+                                onclick="checkAllDinner()">Check all</button>
+                        <button type="submit" class="btn btn-secondary w-100 mb-2">
                             <i class="fas fa-shopping-cart mr-1"></i> Add all to Shopping list
                         </button>
+                        <button type="submit" class="btn btn-secondary w-100"
+                                formaction="/recipes/remove_used/">Remove selected from Pantry</button>
                     </div>
                 </form>
+
+                <script>
+                function checkAllDinner() {
+                    var boxes = document.querySelectorAll('#dinnerIngForm input[type=checkbox]');
+                    var allChecked = Array.from(boxes).every(function(b) { return b.checked; });
+                    boxes.forEach(function(b) { b.checked = !allChecked; });
+                }
+                </script>
             </div>
         </div>
 

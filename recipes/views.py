@@ -40,13 +40,20 @@ def index(request):
 
 def get_one(request, info_id):
     info = get_object_or_404(Info, pk=info_id)
-    # Find dinners that include this recipe as a component
     dinners = Dinner.objects.filter(
         components__recipe=info
-    ).prefetch_related(
-        'components__recipe__recipe_tags'
-    ).distinct()
-    return render(request, 'recipes/info.html', {'info': info, 'dinners': dinners})
+    ).prefetch_related('components__recipe__recipe_tags').distinct()
+    pantry_type_ids = set()
+    if request.user.is_authenticated:
+        pantry_type_ids = set(
+            PantryItem.objects.filter(user=request.user)
+            .values_list('ingredient_type_id', flat=True)
+        )
+    return render(request, 'recipes/info.html', {
+        'info': info,
+        'dinners': dinners,
+        'pantry_type_ids': pantry_type_ids,
+    })
 
 
 def account(request):
@@ -314,9 +321,16 @@ def dinner_combined(request, dinner_id):
         'recipe__ingredient_set__ingredient_type',
         'recipe__instruction_set',
     )
+    pantry_type_ids = set()
+    if request.user.is_authenticated:
+        pantry_type_ids = set(
+            PantryItem.objects.filter(user=request.user)
+            .values_list('ingredient_type_id', flat=True)
+        )
     return render(request, 'recipes/dinner_combined.html', {
         'dinner': dinner,
         'components': components,
+        'pantry_type_ids': pantry_type_ids,
     })
 
 

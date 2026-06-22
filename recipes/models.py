@@ -134,10 +134,21 @@ class Instruction(models.Model):
 
 class IngredientToShop(models.Model):
     shopper = models.ForeignKey(User, on_delete=models.CASCADE)
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    ingredient_type = models.ForeignKey(
+        IngredientType, on_delete=models.CASCADE, null=True, blank=True
+    )
+    amount = models.CharField(max_length=200, default='')
+
+    @property
+    def name(self):
+        return self.ingredient_type.name if self.ingredient_type else ''
+
+    @property
+    def tagg(self):
+        return self.ingredient_type.tagg if self.ingredient_type else None
 
     def __str__(self):
-        return self.ingredient.name
+        return self.name
 
 
 class PantryItem(models.Model):

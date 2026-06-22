@@ -68,6 +68,28 @@ def account(request):
     return render(request, 'recipes/account.html', {})
 
 
+def _add_to_shop_list(user, itype, new_amount):
+    """
+    Add or combine an ingredient into the user's shopping list.
+
+    If the user already has that IngredientType on the list, the amounts are
+    combined with add_amounts().  When units are incompatible (e.g. "stk" and
+    "g"), a second separate row is created instead of silently dropping data.
+    """
+    existing = IngredientToShop.objects.filter(shopper=user, ingredient_type=itype).first()
+    if existing:
+        pq, pu = parse_amount(existing.amount)
+        nq, nu = parse_amount(new_amount)
+        if pq is not None and nq is not None:
+            rq, ru = add_amounts(pq, pu, nq, nu)
+            if rq is not None:
+                existing.amount = format_amount(rq, ru)
+                existing.save()
+                return
+        # Units incompatible or unparseable — fall through to create a second row
+    IngredientToShop.objects.create(shopper=user, ingredient_type=itype, amount=new_amount)
+
+
 def shopping(request):
     if request.user.is_authenticated:
 
@@ -81,30 +103,22 @@ def shopping(request):
                 try:
                     from decimal import Decimal
                     qty = Decimal(raw_qty)
-                    measurment = format_amount(qty, unit)
+                    new_amount = format_amount(qty, unit)
                 except Exception:
-                    measurment = ''
-                if measurment:
-                    ingredient = Ingredient()
-                    ingredient.ingredient_type = itype
-                    ingredient.measurment = measurment
-                    ingredient.save()
-
-                    toShop = IngredientToShop()
-                    toShop.shopper = current_user
-                    toShop.ingredient = ingredient
-                    toShop.save()
+                    new_amount = ''
+                if new_amount:
+                    _add_to_shop_list(current_user, itype, new_amount)
 
         tagg_list = Tagg.objects.order_by('id')
         ingredient_type_list = IngredientType.objects.order_by('name')
         shop_qs = IngredientToShop.objects.filter(shopper=current_user).select_related(
-            'ingredient__ingredient_type__tagg'
+            'ingredient_type__tagg'
         )
 
         # Group items by tagg (only include categories that have items)
         items_by_tagg = defaultdict(list)
         for item in shop_qs:
-            tagg = item.ingredient.tagg
+            tagg = item.tagg
             if tagg:
                 items_by_tagg[tagg.id].append(item)
 
@@ -142,17 +156,17 @@ def delete_all(request):
 
 def add_to_shop(request):
     if request.user.is_authenticated:
-
         current_user = request.user
         if request.method == 'POST':
             ingredients = request.POST
             list_ing = iter(ingredients)
-            next(list_ing)
+            next(list_ing)  # skip csrfmiddlewaretoken
             for item in list_ing:
-                toShop = IngredientToShop()
-                toShop.shopper = current_user
-                toShop.ingredient = Ingredient.objects.get(pk = request.POST[item])
-                toShop.save()
+                ing = Ingredient.objects.select_related('ingredient_type').filter(
+                    pk=request.POST[item]
+                ).first()
+                if ing and ing.ingredient_type:
+                    _add_to_shop_list(current_user, ing.ingredient_type, ing.measurment)
 
     return HttpResponseRedirect("/recipes/shopping/")
     
@@ -221,9 +235,9 @@ def add_to_pantry(request):
     if request.user.is_authenticated and request.method == 'POST':
         shop_item_id = request.POST.get('shop_item_id')
         obj = IngredientToShop.objects.filter(id=shop_item_id, shopper=request.user).first()
-        if obj and obj.ingredient.ingredient_type:
-            itype = obj.ingredient.ingredient_type
-            new_amount = obj.ingredient.measurment  # already formatted string
+        if obj and obj.ingredient_type:
+            itype = obj.ingredient_type
+            new_amount = obj.amount
             new_qty, new_unit = parse_amount(new_amount)
 
             existing = PantryItem.objects.filter(
@@ -255,11 +269,11 @@ def add_checked_to_pantry(request):
         shop_ids = request.POST.getlist('shop_ids')
         for shop_id in shop_ids:
             obj = IngredientToShop.objects.filter(id=shop_id, shopper=request.user).first()
-            if not obj or not obj.ingredient.ingredient_type:
+            if not obj or not obj.ingredient_type:
                 continue
 
-            itype = obj.ingredient.ingredient_type
-            new_amount = obj.ingredient.measurment
+            itype = obj.ingredient_type
+            new_amount = obj.amount
             new_qty_parsed, new_unit_parsed = parse_amount(new_amount)
 
             existing = PantryItem.objects.filter(
@@ -371,11 +385,9 @@ def add_combined_to_shop(request):
     for recipe_id in recipe_ids:
         recipe = Info.objects.filter(pk=recipe_id).first()
         if recipe:
-            for ingredient in recipe.ingredient_set.all():
-                IngredientToShop.objects.create(
-                    shopper=request.user,
-                    ingredient=ingredient,
-                )
+            for ingredient in recipe.ingredient_set.select_related('ingredient_type').all():
+                if ingredient.ingredient_type:
+                    _add_to_shop_list(request.user, ingredient.ingredient_type, ingredient.measurment)
     return HttpResponseRedirect('/recipes/shopping/')
 
 
@@ -471,8 +483,9 @@ def add_dinner_to_shop(request):
         id__in=component_ids
     ).select_related('recipe')
     for comp in components:
-        for ingredient in comp.recipe.ingredient_set.all():
-            IngredientToShop.objects.create(shopper=request.user, ingredient=ingredient)
+        for ingredient in comp.recipe.ingredient_set.select_related('ingredient_type').all():
+            if ingredient.ingredient_type:
+                _add_to_shop_list(request.user, ingredient.ingredient_type, ingredient.measurment)
     return HttpResponseRedirect('/recipes/shopping/')
 
 

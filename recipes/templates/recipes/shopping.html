@@ -50,45 +50,23 @@
                     <hr style="height:2px;border-width:0;color:white;background-color:white;">
 
                     {% for item in items %}
-                    <div class="mb-3">
-                        <!-- Name row: checkbox  |  ingredient name  |  delete -->
-                        <div class="d-flex align-items-center">
-                            <input type="checkbox"
-                                   name="shop_ids"
-                                   value="{{ item.obj.id }}"
-                                   id="chk_{{ item.obj.id }}"
-                                   class="shop-checkbox"
-                                   style="width:20px;height:20px;flex-shrink:0;">
-                            <label for="chk_{{ item.obj.id }}"
-                                   class="ml-2 mb-0"
-                                   style="font-size:16px;flex:1;cursor:pointer;">
-                                {{ item.obj.ingredient.name }}
-                            </label>
-                            <a href="/recipes/delete/{{ item.obj.id }}"
-                               class="btn btn-sm btn-outline-light ml-2"
-                               title="Remove from list">
-                                <i class="fa fa-trash"></i>
-                            </a>
-                        </div>
-
-                        <!-- Quantity row: editable qty + unit select -->
-                        <div class="d-flex align-items-center mt-1" style="padding-left:28px;">
-                            <input type="number"
-                                   name="qty_{{ item.obj.id }}"
-                                   value="{{ item.qty }}"
-                                   min="0.01" step="any"
-                                   class="form-control form-control-sm"
-                                   style="width:80px;"
-                                   title="Change quantity before adding to pantry">
-                            <select name="unit_{{ item.obj.id }}"
-                                    class="form-control form-control-sm ml-1"
-                                    style="width:70px;"
-                                    title="Unit">
-                                {% for u in units %}
-                                <option value="{{ u }}" {% if u == item.unit %}selected{% endif %}>{{ u }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <input type="checkbox"
+                               name="shop_ids"
+                               value="{{ item.id }}"
+                               id="chk_{{ item.id }}"
+                               class="shop-checkbox"
+                               style="width:20px;height:20px;flex-shrink:0;">
+                        <label for="chk_{{ item.id }}"
+                               class="ml-2 mb-0"
+                               style="font-size:16px;flex:1;cursor:pointer;">
+                            {{ item.ingredient.measurment }} {{ item.ingredient.name }}
+                        </label>
+                        <a href="/recipes/delete/{{ item.id }}"
+                           class="btn btn-sm btn-outline-light ml-2"
+                           title="Remove from list">
+                            <i class="fa fa-trash"></i>
+                        </a>
                     </div>
                     {% endfor %}
 

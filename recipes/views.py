@@ -101,20 +101,13 @@ def shopping(request):
             'ingredient__ingredient_type__tagg'
         )
 
-        # Pre-parse qty/unit for each item and group by tagg
+        # Group items by tagg (only include categories that have items)
         items_by_tagg = defaultdict(list)
         for item in shop_qs:
-            qty, unit_parsed = parse_amount(item.ingredient.measurment)
-            item_data = {
-                'obj': item,
-                'qty': qty if qty is not None else '',
-                'unit': unit_parsed if unit_parsed else UNITS[0],
-            }
             tagg = item.ingredient.tagg
             if tagg:
-                items_by_tagg[tagg.id].append(item_data)
+                items_by_tagg[tagg.id].append(item)
 
-        # Only pass categories that actually have items
         tagg_with_items = [
             (tagg, items_by_tagg[tagg.id])
             for tagg in tagg_list
@@ -257,25 +250,13 @@ def add_to_pantry(request):
 
 
 def add_checked_to_pantry(request):
-    """Move all checked shopping items to pantry, respecting any quantity edits the user made."""
+    """Move all checked shopping items to pantry."""
     if request.user.is_authenticated and request.method == 'POST':
         shop_ids = request.POST.getlist('shop_ids')
         for shop_id in shop_ids:
             obj = IngredientToShop.objects.filter(id=shop_id, shopper=request.user).first()
             if not obj or not obj.ingredient.ingredient_type:
                 continue
-
-            # Apply updated quantity if the user changed it in the shopping view
-            new_qty_str = request.POST.get(f'qty_{shop_id}', '').strip()
-            new_unit = request.POST.get(f'unit_{shop_id}', '').strip()
-            if new_qty_str and new_unit in UNITS:
-                try:
-                    from decimal import Decimal
-                    new_qty_val = Decimal(new_qty_str)
-                    obj.ingredient.measurment = format_amount(new_qty_val, new_unit)
-                    obj.ingredient.save()
-                except Exception:
-                    pass
 
             itype = obj.ingredient.ingredient_type
             new_amount = obj.ingredient.measurment

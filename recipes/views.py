@@ -572,17 +572,16 @@ def dinner_combined(request, dinner_id):
 
 
 def add_dinner_to_shop(request):
-    """Add all ingredients from selected dinner components to the shopping list."""
+    """Add only the checked ingredients from a dinner to the shopping list."""
     if not request.user.is_authenticated or request.method != 'POST':
         return HttpResponseRedirect('/recipes/shopping/')
-    component_ids = request.POST.getlist('component_ids')
-    components = DinnerComponent.objects.filter(
-        id__in=component_ids
-    ).select_related('recipe')
-    for comp in components:
-        for ingredient in comp.recipe.ingredient_set.select_related('ingredient_type').all():
-            if ingredient.ingredient_type:
-                _add_to_shop_list(request.user, ingredient.ingredient_type, ingredient.measurment)
+    ingredient_ids = request.POST.getlist('ingredient_ids')
+    ingredients = Ingredient.objects.filter(
+        id__in=ingredient_ids
+    ).select_related('ingredient_type')
+    for ingredient in ingredients:
+        if ingredient.ingredient_type:
+            _add_to_shop_list(request.user, ingredient.ingredient_type, ingredient.measurment)
     return HttpResponseRedirect('/recipes/shopping/')
 
 

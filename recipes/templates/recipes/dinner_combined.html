@@ -33,7 +33,7 @@
                     {% with itype=ingredient.ingredient_type %}
                     <div style="padding-bottom: 6px;">
                         <input type="checkbox"
-                               name="i{{ forloop.parentloop.counter }}x{{ forloop.counter }}"
+                               name="ingredient_ids"
                                value="{{ ingredient.id }}"
                                {% if not itype or itype.id not in pantry_type_ids and not itype.is_staple %}checked{% endif %}
                                style="width: 16px; height: 16px; vertical-align: middle;">
@@ -53,13 +53,17 @@
                     {% endfor %}
 
                     <div class="mt-4 mb-2">
-                        <button type="button" class="btn btn-secondary w-100 mb-2"
-                                onclick="checkAllDinner()">Check all</button>
-                        <button type="submit" class="btn btn-secondary w-100 mb-2">
-                            <i class="fas fa-shopping-cart mr-1"></i> Add all to Shopping list
+                        <button type="button" class="btn btn-outline-light btn-sm w-100 mb-3"
+                                onclick="checkAllDinner()">
+                            <i class="fas fa-check-square mr-1"></i>Check all
                         </button>
-                        <button type="submit" class="btn btn-secondary w-100"
-                                formaction="/recipes/remove_used/">Remove selected from Pantry</button>
+                        <button type="submit" class="btn btn-success w-100 mb-2">
+                            <i class="fas fa-shopping-cart mr-1"></i>Add selected to Shopping list
+                        </button>
+                        <button type="submit" class="btn btn-outline-light btn-sm w-100"
+                                formaction="/recipes/remove_used/">
+                            <i class="fas fa-minus-circle mr-1"></i>Remove selected from Pantry
+                        </button>
                     </div>
                 </form>
 

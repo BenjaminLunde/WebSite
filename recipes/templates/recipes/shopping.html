@@ -25,24 +25,18 @@
 
     {% if has_items %}
     <!-- ── Main shopping form ────────────────────────────────────── -->
-    <form id="pantryForm" action="/recipes/shopping/add-to-pantry/" method="post">
+    <form id="shopForm" action="/recipes/shopping/add-to-pantry/" method="post">
         {% csrf_token %}
 
-        <!-- Action bar -->
-        <div class="d-flex align-items-center mb-4 flex-wrap" style="gap: 8px;">
+        <!-- Check all at top -->
+        <div class="mb-3">
             <button type="button" onclick="toggleCheckAll()" class="btn btn-secondary">
-                Check all
-            </button>
-            <a href="/recipes/delete_all" class="btn btn-danger">
-                Empty list
-            </a>
-            <button type="submit" class="btn btn-success ml-auto">
-                <i class="fas fa-box-open mr-1"></i> Add checked to Pantry
+                <i class="fas fa-check-square mr-1"></i>Check all
             </button>
         </div>
 
         <!-- Category cards -->
-        <div class="row pb-5">
+        <div class="row">
             {% for tagg, items in tagg_with_items %}
             <div class="text-white bg-primary col-12 col-sm-6 col-lg-3 border border-white mb-3">
                 <div class="card-body pt-4 pl-3 pr-3 pb-3">
@@ -73,6 +67,16 @@
                 </div>
             </div>
             {% endfor %}
+        </div>
+
+        <!-- Action bar below items -->
+        <div class="d-flex align-items-center mt-3 mb-4 flex-wrap" style="gap: 8px;">
+            <a href="/recipes/delete_all" class="btn btn-danger">
+                <i class="fas fa-trash mr-1"></i>Empty list
+            </a>
+            <button type="submit" class="btn btn-success ml-auto">
+                <i class="fas fa-box-open mr-1"></i>Add checked to Pantry
+            </button>
         </div>
     </form>
 

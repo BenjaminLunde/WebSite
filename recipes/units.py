@@ -30,7 +30,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 # ---------------------------------------------------------------------------
 # Public constant — drives the unit dropdown in templates
 # ---------------------------------------------------------------------------
-UNITS = ['g', 'kg', 'dl', 'l', 'ts', 'ss', 'stk']
+UNITS = ['g', 'kg', 'ml', 'dl', 'l', 'ts', 'ss', 'stk']
 
 # ---------------------------------------------------------------------------
 # Internal lookup tables
@@ -39,6 +39,7 @@ UNITS = ['g', 'kg', 'dl', 'l', 'ts', 'ss', 'stk']
 _AMOUNT_UNITS = {
     'g':  Decimal('1'),
     'kg': Decimal('1000'),
+    'ml': Decimal('1'),
     'dl': Decimal('100'),
     'l':  Decimal('1000'),
     'ts': Decimal('5'),
@@ -56,7 +57,7 @@ _UNIT_MAP.update({u: ('count', _COUNT_UNITS) for u in _COUNT_UNITS})
 # Which display-category each unit belongs to (for pretty output)
 _DISPLAY_FAMILY = {
     'g': 'weight', 'kg': 'weight',
-    'dl': 'volume', 'l': 'volume',
+    'ml': 'volume', 'dl': 'volume', 'l': 'volume',
     'ts': 'spoon',  'ss': 'spoon',
     'stk': 'count',
 }
@@ -65,15 +66,17 @@ _DISPLAY_FAMILY = {
 _ALIASES = {
     'gram': 'g', 'grams': 'g',
     'kilogram': 'kg', 'kilograms': 'kg',
+    'milliliter': 'ml', 'milliliters': 'ml', 'millilitre': 'ml', 'millilitres': 'ml',
     'deciliter': 'dl', 'deciliters': 'dl', 'decilitre': 'dl',
     'liter': 'l', 'liters': 'l', 'litre': 'l', 'litres': 'l',
-    'teskje': 'ts', 'teskjeer': 'ts', 'teaspoon': 'ts', 'tsp': 'ts',
-    'spiseskje': 'ss', 'spiseskjeer': 'ss', 'tablespoon': 'ss', 'tbsp': 'ss',
+    'teskje': 'ts', 'teskjeer': 'ts', 'teaspoon': 'ts', 'teaspoons': 'ts', 'tsp': 'ts',
+    'spiseskje': 'ss', 'spiseskjeer': 'ss', 'tablespoon': 'ss', 'tablespoons': 'ss',
+    'tbs': 'ss', 'tbsp': 'ss',
     'pcs': 'stk', 'pc': 'stk', 'piece': 'stk', 'pieces': 'stk',
     'stykk': 'stk', 'stykker': 'stk',
 }
 
-_PARSE_RE = re.compile(r'^\s*(\d+(?:[.,]\d+)?)\s*([a-zA-Z]*)\s*$')
+_PARSE_RE = re.compile(r'^\s*(\d+(?:[.,]\d+)?(?:/\d+)?)\s*([a-zA-Z]*)\s*$')
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +112,11 @@ def parse_amount(text: str):
         return None, None
 
     try:
-        qty = Decimal(qty_str)
+        if '/' in qty_str:
+            num, den = qty_str.split('/', 1)
+            qty = Decimal(num) / Decimal(den)
+        else:
+            qty = Decimal(qty_str)
     except InvalidOperation:
         return None, None
 
@@ -219,9 +226,10 @@ def _pick_unit(base_qty: Decimal, unit_hint: str):
         return base_qty / 100, 'dl'
 
     elif cat == 'spoon':
-        if base_qty % 3 == 0:
-            return base_qty / 3, 'ss'
-        return base_qty, 'ts'
+        ts_qty = base_qty / Decimal('5')   # ml → ts
+        if ts_qty % 3 == 0:
+            return ts_qty / 3, 'ss'
+        return ts_qty, 'ts'
 
     else:  # count
         return base_qty, 'stk'

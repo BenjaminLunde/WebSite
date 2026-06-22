@@ -277,6 +277,106 @@ def search_and_import(query, sources):
 
 
 # ---------------------------------------------------------------------------
+# Ingredient normalisation (runs automatically after every import)
+# ---------------------------------------------------------------------------
+
+def _normalize_new_ingredients(new_type_ids):
+    """
+    For freshly created IngredientTypes, ask Gemini to:
+    1. Translate the name to Norwegian and capitalise the first letter.
+    2. Match against existing ingredient types — merge if it's a duplicate.
+    3. If genuinely new, assign category/staple flags/shelf life.
+
+    Runs silently — failures are swallowed so the recipe is still saved.
+    """
+    if not os.environ.get('GOOGLE_API_KEY') or not new_type_ids:
+        return
+
+    try:
+        from google import genai
+    except ImportError:
+        return
+
+    from .models import IngredientType, Tagg, Ingredient, IngredientToShop, PantryItem
+
+    new_types = list(IngredientType.objects.filter(pk__in=new_type_ids).values('id', 'name'))
+    existing = list(IngredientType.objects.exclude(pk__in=new_type_ids).values('id', 'name'))
+    tag_names = list(Tagg.objects.values_list('name', flat=True))
+
+    prompt = (
+        'You are a Norwegian food expert helping normalize recipe ingredients.\n\n'
+        'For each NEW ingredient:\n'
+        '1. Translate the name to Norwegian (capitalise first letter only)\n'
+        '2. Check if it matches any EXISTING ingredient (same food, different '
+        'spelling/language/extra words like "for sauce")\n'
+        '3. If no match, assign a category and flags\n\n'
+        f'Available categories: {", ".join(tag_names) if tag_names else "none configured"}\n\n'
+        'Flags:\n'
+        '- is_staple: true for long-term pantry staples (salt, oil, flour, sugar, spices)\n'
+        '- is_always_available: true ONLY for things never bought (water)\n'
+        '- shelf_life_days: days until spoilage; null for shelf-stable or staple items\n\n'
+        'Return ONLY valid JSON, no markdown:\n'
+        '{"ingredients": [\n'
+        '  {"id": 5, "norwegian_name": "Vann", "match_existing_id": 3},\n'
+        '  {"id": 6, "norwegian_name": "Hvetemel", "match_existing_id": null, '
+        '"tagg": "Bakevarer", "is_staple": true, "is_always_available": false, "shelf_life_days": null}\n'
+        ']}\n\n'
+        f'NEW ingredients:\n{json.dumps(new_types, ensure_ascii=False)}\n\n'
+        f'EXISTING ingredients (for matching only):\n{json.dumps(existing, ensure_ascii=False)}'
+    )
+
+    try:
+        client = genai.Client()
+        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
+        raw = response.text.strip()
+        if raw.startswith('```'):
+            raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
+        result = json.loads(raw)
+    except Exception:
+        return  # silently skip — recipe is saved regardless
+
+    tag_map = {t.name.lower(): t for t in Tagg.objects.all()}
+
+    for item in result.get('ingredients', []):
+        try:
+            itype = IngredientType.objects.get(pk=item.get('id'))
+        except IngredientType.DoesNotExist:
+            continue
+
+        match_id = item.get('match_existing_id')
+        if match_id:
+            # Merge into the existing type
+            try:
+                existing_type = IngredientType.objects.get(pk=match_id)
+                Ingredient.objects.filter(ingredient_type=itype).update(ingredient_type=existing_type)
+                IngredientToShop.objects.filter(ingredient_type=itype).update(ingredient_type=existing_type)
+                PantryItem.objects.filter(ingredient_type=itype).update(ingredient_type=existing_type)
+                itype.delete()
+            except IngredientType.DoesNotExist:
+                pass  # existing type was deleted in a race — leave the new one as-is
+            continue
+
+        # Genuinely new — rename and categorise
+        norwegian_name = item.get('norwegian_name', '').strip()
+        if norwegian_name and not IngredientType.objects.filter(
+            name=norwegian_name
+        ).exclude(pk=itype.pk).exists():
+            itype.name = norwegian_name
+
+        tagg_name = item.get('tagg', '')
+        if tagg_name:
+            itype.tagg = tag_map.get(tagg_name.lower())
+
+        itype.is_staple = bool(item.get('is_staple', False))
+        itype.is_always_available = bool(item.get('is_always_available', False))
+        shelf = item.get('shelf_life_days')
+        if shelf is not None:
+            itype.shelf_life_days = int(shelf)
+
+        itype.save()
+
+
+# ---------------------------------------------------------------------------
 # Database creation
 # ---------------------------------------------------------------------------
 
@@ -300,13 +400,16 @@ def create_draft_recipe(data):
     )
     recipe.save()
 
-    # Ingredients
+    # Ingredients — track which types are newly created for normalisation
+    new_type_ids = []
     for ing in data.get('ingredients', []):
         name = ing.get('name', '').strip()
         amount = ing.get('amount', '').strip()
         if not name:
             continue
-        itype, _ = IngredientType.objects.get_or_create(name=name)
+        itype, created = IngredientType.objects.get_or_create(name=name)
+        if created:
+            new_type_ids.append(itype.id)
         Ingredient.objects.create(
             info=recipe,
             ingredient_type=itype,
@@ -318,5 +421,8 @@ def create_draft_recipe(data):
         text = str(step_text).strip()
         if text:
             Instruction.objects.create(info=recipe, text=text)
+
+    # Normalise any freshly created ingredient types
+    _normalize_new_ingredients(new_type_ids)
 
     return recipe

@@ -250,9 +250,9 @@
     {% if suggested_imports %}
     <div class="mt-4" style="max-width:740px;">
         {% if user.is_staff %}
-        <h5 class="mb-1"><i class="fas fa-cloud-download-alt mr-1"></i> Suggested recipes to import</h5>
+        <h5 class="mb-1"><i class="fas fa-robot mr-1"></i> Suggested recipes to add</h5>
         <p class="text-muted small mb-3">
-            The AI couldn't find these in your recipe library. Import them from trusted sites to fill the gaps in the plan.
+            The AI couldn't find these in your recipe library. Click "AI Generate" to have Gemini write the recipe from scratch and save it as a draft.
         </p>
         {% for imp in suggested_imports %}
         <div class="card mb-2">
@@ -265,14 +265,14 @@
                         {% endif %}
                         <br>
                         <small class="text-muted">
-                            Search: <em>{{ imp.search_query }}</em>
+                            <em>{{ imp.search_query }}</em>
                         </small>
                     </div>
-                    <form method="post" action="/recipes/import/" class="mt-1 mt-sm-0 ml-sm-3">
+                    <form method="post" action="{% url 'recipes:ai_generate_recipe' %}" class="mt-1 mt-sm-0 ml-sm-3">
                         {% csrf_token %}
-                        <input type="hidden" name="search_query" value="{{ imp.search_query }}">
+                        <input type="hidden" name="query" value="{{ imp.search_query }}">
                         <button type="submit" class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-download mr-1"></i> Search &amp; Import
+                            <i class="fas fa-robot mr-1"></i> AI Generate
                         </button>
                     </form>
                 </div>

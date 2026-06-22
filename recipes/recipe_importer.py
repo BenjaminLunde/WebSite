@@ -155,6 +155,69 @@ def gemini_parse_recipe(page_text):
 # High-level import helpers
 # ---------------------------------------------------------------------------
 
+_GENERATE_PROMPT = """\
+Write a complete, authentic recipe for the dish described below, \
+then return ONLY valid JSON (no markdown, no extra text) in exactly this format:
+
+{
+  "title": "Recipe name",
+  "intro": "One or two sentence description",
+  "servings": 4,
+  "time": "30 min",
+  "difficulty": 3,
+  "ingredients": [
+    {"name": "flour", "amount": "200 g"},
+    {"name": "eggs", "amount": "2 stk"}
+  ],
+  "instructions": [
+    "First step.",
+    "Second step."
+  ]
+}
+
+Rules:
+- difficulty is 1 (very easy) to 5 (very hard).
+- Use metric measurements (g, kg, dl, l, ts=teaspoon, ss=tablespoon) where possible.
+- "stk" means pieces/items (e.g. "2 stk" for 2 eggs).
+- Keep instructions clear and concise — one action per step.
+- Make the recipe practical and realistic for a home cook.
+
+Dish:
+"""
+
+
+def generate_recipe(query):
+    """
+    Ask Gemini to invent a recipe for *query* from its own knowledge.
+    No web scraping — Gemini writes the recipe itself.
+    Returns (data_dict, error_string).
+    """
+    env_var = 'GOOGLE_API_KEY'
+    if not os.environ.get(env_var):
+        return None, (
+            f'{env_var} is not set. '
+            'Add it as a Railway environment variable.'
+        )
+
+    try:
+        import google.generativeai as genai
+    except ImportError:
+        return None, 'google-generativeai is not installed (check requirements.txt).'
+
+    try:
+        gmodel = genai.GenerativeModel('gemini-2.5-flash')
+        response = gmodel.generate_content(_GENERATE_PROMPT + query)
+        raw = response.text.strip()
+        if raw.startswith('```'):
+            raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
+        data = json.loads(raw)
+        return data, ''
+    except json.JSONDecodeError:
+        return None, 'Gemini returned a response that could not be parsed as JSON. Try again.'
+    except Exception as exc:
+        return None, f'AI request failed: {exc}'
+
+
 def import_from_url(url):
     """
     Fetch *url*, parse the recipe with Gemini.

@@ -738,38 +738,52 @@ def import_recipe(request):
     if not request.user.is_authenticated or not request.user.is_staff:
         return HttpResponseRedirect('/recipes/')
 
-    sources = RecipeSource.objects.filter(is_active=True)
     error = ''
-    preview = None
     source_url = ''
 
     if request.method == 'POST':
-        from .recipe_importer import import_from_url, search_and_import, create_draft_recipe
+        from .recipe_importer import import_from_url, create_draft_recipe
 
         direct_url = request.POST.get('direct_url', '').strip()
-        search_query = request.POST.get('search_query', '').strip()
 
         if direct_url:
             data, source_url, error = import_from_url(direct_url)
-        elif search_query:
-            data, source_url, error = search_and_import(search_query, sources)
         else:
-            error = 'Please enter a URL or a search term.'
+            error = 'Please paste a recipe URL.'
             data = None
 
         if data and not error:
             recipe = create_draft_recipe(data)
             return HttpResponseRedirect(f'/recipes/{recipe.id}/')
 
-        preview = data  # Show partial preview even on error
-
     context = {
-        'sources': sources,
         'error': error,
-        'preview': preview,
         'source_url': source_url,
     }
     return render(request, 'recipes/import_recipe.html', context)
+
+
+def ai_generate_recipe(request):
+    """
+    Staff-only: ask Gemini to write a recipe from scratch based on a text query.
+    Used by the meal planner's 'AI Generate' button on suggested imports.
+    POST expects: query (text description of the dish).
+    On success redirects to the new draft recipe; on failure back to the meal planner.
+    """
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return HttpResponseRedirect('/recipes/')
+
+    if request.method == 'POST':
+        from .recipe_importer import generate_recipe, create_draft_recipe
+
+        query = request.POST.get('query', '').strip()
+        if query:
+            data, error = generate_recipe(query)
+            if data and not error:
+                recipe = create_draft_recipe(data)
+                return HttpResponseRedirect(f'/recipes/{recipe.id}/')
+
+    return HttpResponseRedirect('/recipes/meal-planner/')
 
 
 def publish_recipe(request, info_id):

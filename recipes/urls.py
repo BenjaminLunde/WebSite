@@ -31,5 +31,6 @@ urlpatterns = [
     path('<int:info_id>/edit/', views.edit_recipe, name='edit_recipe'),
     path('<int:info_id>/log-cook/', views.log_cook, name='log_cook'),
     path('import/', views.import_recipe, name='import_recipe'),
+    path('import/generate/', views.ai_generate_recipe, name='ai_generate_recipe'),
     path('<int:info_id>/publish/', views.publish_recipe, name='publish_recipe'),
 ]

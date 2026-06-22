@@ -94,46 +94,58 @@ function eventCheckBox() {
                 {% if user.is_authenticated %}
                 <li class="nav-item">
                     <a class="nav-link" href="/recipes/shopping">
-                        <i class="fas fa-shopping-cart"></i> <span class="d-lg-none ml-1">Shopping</span>
+                        <i class="fas fa-shopping-cart mr-1"></i>Shopping
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/recipes/pantry/">
-                        <i class="fas fa-box-open"></i> <span class="d-lg-none ml-1">Pantry</span>
+                        <i class="fas fa-box-open mr-1"></i>Pantry
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/recipes/meal-planner/">Meal Planner</a>
+                    <a class="nav-link" href="/recipes/meal-planner/">
+                        <i class="fas fa-calendar-alt mr-1"></i>Meal Planner
+                    </a>
                 </li>
                 {% endif %}
                 {% if user.is_superuser %}
                 <li class="nav-item">
-                    <a class="nav-link" href="/admin/recipes/info/add/">
-                        <i class="fas fa-plus-circle"></i> <span class="d-lg-none ml-1">Add recipe</span>
+                    <a class="nav-link" href="/admin/">
+                        <i class="fas fa-cog mr-1"></i>Admin
                     </a>
                 </li>
                 {% endif %}
                 <li class="nav-item">
-                    <a class="nav-link" href="/recipes/">Dinners</a>
+                    <a class="nav-link" href="/recipes/">
+                        <i class="fas fa-utensils mr-1"></i>Dinners
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/recipes/recipes/">Recipes</a>
+                    <a class="nav-link" href="/recipes/recipes/">
+                        <i class="fas fa-book-open mr-1"></i>Recipes
+                    </a>
                 </li>
             </ul>
             <ul class="navbar-nav ml-auto">
                 {% if user.is_authenticated %}
                 <li class="nav-item">
-                    <a class="nav-link" href="/recipes/account/">{{ user.username }}</a>
+                    <a class="nav-link" href="/recipes/account/">
+                        <i class="fas fa-user mr-1"></i>{{ user.username }}
+                    </a>
                 </li>
                 <li class="nav-item">
                     <form method="post" action="/recipes/accounts/logout/" style="display:inline;">
                         {% csrf_token %}
-                        <button type="submit" class="nav-link btn btn-link" style="color: white; padding: 0.4rem 0.5rem;">Log out</button>
+                        <button type="submit" class="nav-link btn btn-link" style="color: white; padding: 0.4rem 0.5rem;">
+                            <i class="fas fa-sign-out-alt mr-1"></i>Log out
+                        </button>
                     </form>
                 </li>
                 {% else %}
                 <li class="nav-item">
-                    <a class="nav-link" href="/recipes/accounts/login/">Log In</a>
+                    <a class="nav-link" href="/recipes/accounts/login/">
+                        <i class="fas fa-sign-in-alt mr-1"></i>Log In
+                    </a>
                 </li>
                 {% endif %}
             </ul>

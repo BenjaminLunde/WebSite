@@ -39,6 +39,100 @@ def merge_ingredient_types(modeladmin, request, queryset):
         f'Merged {dup_names} → "{canonical.name}". {updated} reference(s) updated.',
     )
 
+@admin.action(description='Find and merge duplicates with AI')
+def ai_merge_duplicate_ingredients(modeladmin, request, queryset):
+    if queryset.count() > 200:
+        modeladmin.message_user(
+            request,
+            'Select 200 or fewer at a time.',
+            level='warning',
+        )
+        return
+
+    if not os.environ.get('GOOGLE_API_KEY'):
+        modeladmin.message_user(request, 'GOOGLE_API_KEY is not set.', level='error')
+        return
+
+    try:
+        from google import genai
+    except ImportError:
+        modeladmin.message_user(request, 'google-genai is not installed.', level='error')
+        return
+
+    items = [{'id': it.id, 'name': it.name} for it in queryset]
+
+    prompt = (
+        'You are a food expert. The list below contains ingredient names from a recipe app — '
+        'many are duplicates or near-duplicates (different capitalization, language, '
+        'added context like "for sauce", abbreviations, etc.).\n\n'
+        'Identify groups of ingredients that refer to the same thing and should be merged. '
+        'For each group pick the best canonical name (clear, lowercase, no extra context). '
+        'Only include groups where there are actual duplicates — skip unique ingredients.\n\n'
+        'Return ONLY valid JSON, no markdown:\n'
+        '{"merges": [\n'
+        '  {"keep_id": 3, "keep_name": "water", "duplicates": [\n'
+        '    {"id": 7, "name": "Vann"},\n'
+        '    {"id": 12, "name": "water (for sauce)"}\n'
+        '  ]}\n'
+        ']}\n\n'
+        f'Ingredients:\n{json.dumps(items, ensure_ascii=False)}'
+    )
+
+    try:
+        client = genai.Client()
+        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
+        raw = response.text.strip()
+        if raw.startswith('```'):
+            raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        modeladmin.message_user(request, 'AI returned invalid JSON. Try again.', level='error')
+        return
+    except Exception as exc:
+        modeladmin.message_user(request, f'AI request failed: {exc}', level='error')
+        return
+
+    merges = data.get('merges', [])
+    if not merges:
+        modeladmin.message_user(request, 'AI found no duplicates in the selection.')
+        return
+
+    total_refs = 0
+    summary = []
+
+    for merge in merges:
+        try:
+            canonical = IngredientType.objects.get(pk=merge['keep_id'])
+        except IngredientType.DoesNotExist:
+            continue
+
+        # Optionally rename to AI's preferred canonical name
+        preferred_name = merge.get('keep_name', '').strip()
+        if preferred_name and preferred_name != canonical.name:
+            canonical.name = preferred_name
+            canonical.save()
+
+        dup_ids = [d['id'] for d in merge.get('duplicates', [])]
+        dup_names = [d['name'] for d in merge.get('duplicates', [])]
+        duplicates = IngredientType.objects.filter(pk__in=dup_ids)
+
+        refs = 0
+        for dup in duplicates:
+            refs += Ingredient.objects.filter(ingredient_type=dup).update(ingredient_type=canonical)
+            refs += IngredientToShop.objects.filter(ingredient_type=dup).update(ingredient_type=canonical)
+            refs += PantryItem.objects.filter(ingredient_type=dup).update(ingredient_type=canonical)
+        duplicates.delete()
+
+        total_refs += refs
+        summary.append(f'"{canonical.name}" ← {", ".join(f"{chr(34)}{n}{chr(34)}" for n in dup_names)}')
+
+    modeladmin.message_user(
+        request,
+        f'Merged {len(merges)} group(s), {total_refs} reference(s) updated. '
+        + ' | '.join(summary),
+    )
+
+
 @admin.action(description='Fill missing data with AI (category, staple flags, shelf life)')
 def ai_enrich_ingredient_types(modeladmin, request, queryset):
     if queryset.count() > 50:
@@ -144,7 +238,7 @@ class IngredientTypeAdmin(admin.ModelAdmin):
     list_filter = ('tagg', 'is_staple', 'is_always_available')
     search_fields = ('name',)
     ordering = ('name',)
-    actions = [merge_ingredient_types, ai_enrich_ingredient_types]
+    actions = [merge_ingredient_types, ai_merge_duplicate_ingredients, ai_enrich_ingredient_types]
 
 
 class DinnerComponentInline(admin.TabularInline):

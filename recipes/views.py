@@ -761,6 +761,29 @@ def import_recipe(request):
     return render(request, 'recipes/import_recipe.html', context)
 
 
+def normalize_recipe_ingredients(request, info_id):
+    """
+    Staff-only: run AI normalization on all ingredients of a recipe.
+    Translates to Norwegian, deduplicates, and categorizes.
+    POSTs from the edit page, redirects back when done.
+    """
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return HttpResponseRedirect(f'/recipes/{info_id}/')
+
+    if request.method == 'POST':
+        from .recipe_importer import _normalize_new_ingredients
+        recipe = get_object_or_404(Info, pk=info_id)
+        type_ids = list(
+            recipe.ingredient_set
+            .filter(ingredient_type__isnull=False)
+            .values_list('ingredient_type_id', flat=True)
+        )
+        if type_ids:
+            _normalize_new_ingredients(type_ids)
+
+    return HttpResponseRedirect(f'/recipes/{info_id}/edit/')
+
+
 def ai_generate_recipe(request):
     """
     Staff-only: ask Gemini to write a recipe from scratch based on a text query.

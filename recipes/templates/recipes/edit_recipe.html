@@ -16,6 +16,10 @@
         <a href="/recipes/{{ recipe.id }}/" class="btn btn-sm btn-secondary">
             <i class="fas fa-times mr-1"></i>Cancel
         </a>
+        <button type="submit" form="normalizeForm" class="btn btn-sm btn-info"
+                onclick="this.disabled=true; this.innerHTML='<i class=\'fas fa-spinner fa-spin mr-1\'></i>Normalizing…';">
+            <i class="fas fa-robot mr-1"></i>Normalize ingredients
+        </button>
         <button type="submit" class="btn btn-sm btn-success">
             <i class="fas fa-save mr-1"></i>Save
         </button>
@@ -179,6 +183,11 @@
     </button>
 </div>
 
+</form>
+
+{# Hidden form for the normalize button — separate POST to avoid submitting edit fields #}
+<form id="normalizeForm" method="post" action="{% url 'recipes:normalize_recipe_ingredients' recipe.id %}">
+    {% csrf_token %}
 </form>
 
 <script>

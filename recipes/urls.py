@@ -29,6 +29,7 @@ urlpatterns = [
     path('dinners/<int:dinner_id>/combined/', views.dinner_combined, name='dinner_combined'),
     path('dinners/add_to_shop/', views.add_dinner_to_shop, name='add_dinner_to_shop'),
     path('<int:info_id>/edit/', views.edit_recipe, name='edit_recipe'),
+    path('<int:info_id>/normalize-ingredients/', views.normalize_recipe_ingredients, name='normalize_recipe_ingredients'),
     path('<int:info_id>/log-cook/', views.log_cook, name='log_cook'),
     path('import/', views.import_recipe, name='import_recipe'),
     path('import/generate/', views.ai_generate_recipe, name='ai_generate_recipe'),

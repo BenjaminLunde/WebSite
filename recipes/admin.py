@@ -39,6 +39,78 @@ def merge_ingredient_types(modeladmin, request, queryset):
         f'Merged {dup_names} → "{canonical.name}". {updated} reference(s) updated.',
     )
 
+@admin.action(description='Capitalize first letter of each name')
+def capitalize_ingredient_names(modeladmin, request, queryset):
+    updated = 0
+    for itype in queryset:
+        if not itype.name:
+            continue
+        new_name = itype.name[0].upper() + itype.name[1:]
+        if new_name != itype.name:
+            if not IngredientType.objects.filter(name=new_name).exclude(pk=itype.pk).exists():
+                itype.name = new_name
+                itype.save()
+                updated += 1
+    modeladmin.message_user(request, f'Capitalized {updated} name(s).')
+
+
+@admin.action(description='Translate names to Norwegian with AI')
+def ai_translate_to_norwegian(modeladmin, request, queryset):
+    if queryset.count() > 100:
+        modeladmin.message_user(request, 'Select 100 or fewer at a time.', level='warning')
+        return
+
+    if not os.environ.get('GOOGLE_API_KEY'):
+        modeladmin.message_user(request, 'GOOGLE_API_KEY is not set.', level='error')
+        return
+
+    try:
+        from google import genai
+    except ImportError:
+        modeladmin.message_user(request, 'google-genai is not installed.', level='error')
+        return
+
+    items = [{'id': it.id, 'name': it.name} for it in queryset]
+
+    prompt = (
+        'Translate each ingredient name to Norwegian. '
+        'Capitalize only the first letter. Keep the name short and clean — '
+        'no extra context like "for sauce".\n'
+        'Return ONLY valid JSON, no markdown:\n'
+        '{"ingredients": [{"id": 1, "name": "Hvetemel"}, {"id": 2, "name": "Egg"}]}\n\n'
+        f'Ingredients:\n{json.dumps(items, ensure_ascii=False)}'
+    )
+
+    try:
+        client = genai.Client()
+        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
+        raw = response.text.strip()
+        if raw.startswith('```'):
+            raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        modeladmin.message_user(request, 'AI returned invalid JSON. Try again.', level='error')
+        return
+    except Exception as exc:
+        modeladmin.message_user(request, f'AI request failed: {exc}', level='error')
+        return
+
+    updated = 0
+    for item in data.get('ingredients', []):
+        try:
+            itype = IngredientType.objects.get(pk=item['id'])
+        except IngredientType.DoesNotExist:
+            continue
+        new_name = item.get('name', '').strip()
+        if new_name and new_name != itype.name:
+            if not IngredientType.objects.filter(name=new_name).exclude(pk=itype.pk).exists():
+                itype.name = new_name
+                itype.save()
+                updated += 1
+
+    modeladmin.message_user(request, f'Translated {updated} name(s) to Norwegian.')
+
+
 @admin.action(description='Find and merge duplicates with AI')
 def ai_merge_duplicate_ingredients(modeladmin, request, queryset):
     if queryset.count() > 200:
@@ -238,7 +310,13 @@ class IngredientTypeAdmin(admin.ModelAdmin):
     list_filter = ('tagg', 'is_staple', 'is_always_available')
     search_fields = ('name',)
     ordering = ('name',)
-    actions = [merge_ingredient_types, ai_merge_duplicate_ingredients, ai_enrich_ingredient_types]
+    actions = [
+        capitalize_ingredient_names,
+        ai_translate_to_norwegian,
+        ai_merge_duplicate_ingredients,
+        ai_enrich_ingredient_types,
+        merge_ingredient_types,
+    ]
 
 
 class DinnerComponentInline(admin.TabularInline):

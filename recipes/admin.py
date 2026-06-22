@@ -2,10 +2,40 @@ from django.contrib import admin
 from recipes.models import (
     Ingredient, Instruction, Tagg, RecipeTag, PantryItem,
     IngredientType, Dinner, DinnerComponent, RecipeSource,
+    IngredientToShop,
 )
 from django.contrib.auth.models import User
 
 from .models import Info
+
+
+@admin.action(description='Merge selected into oldest entry (others deleted)')
+def merge_ingredient_types(modeladmin, request, queryset):
+    if queryset.count() < 2:
+        modeladmin.message_user(
+            request,
+            'Select at least 2 ingredient types to merge.',
+            level='warning',
+        )
+        return
+
+    # Keep the oldest (lowest ID); merge everything else into it
+    canonical = queryset.order_by('id').first()
+    duplicates = queryset.exclude(pk=canonical.pk)
+    dup_names = ', '.join(f'"{d.name}"' for d in duplicates)
+
+    updated = 0
+    for dup in duplicates:
+        updated += Ingredient.objects.filter(ingredient_type=dup).update(ingredient_type=canonical)
+        updated += IngredientToShop.objects.filter(ingredient_type=dup).update(ingredient_type=canonical)
+        updated += PantryItem.objects.filter(ingredient_type=dup).update(ingredient_type=canonical)
+
+    duplicates.delete()
+
+    modeladmin.message_user(
+        request,
+        f'Merged {dup_names} → "{canonical.name}". {updated} reference(s) updated.',
+    )
 
 # Register your models here.
 
@@ -32,6 +62,7 @@ class IngredientTypeAdmin(admin.ModelAdmin):
     list_filter = ('tagg', 'is_staple', 'is_always_available')
     search_fields = ('name',)
     ordering = ('name',)
+    actions = [merge_ingredient_types]
 
 
 class DinnerComponentInline(admin.TabularInline):

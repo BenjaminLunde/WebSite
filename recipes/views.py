@@ -335,31 +335,42 @@ def delete_selected_pantry(request):
 
 def remove_used_ingredients(request):
     """Subtract selected recipe ingredient amounts from the user's pantry."""
-    if request.user.is_authenticated and request.method == 'POST':
-        ingredients = request.POST
-        list_ing = iter(ingredients)
-        next(list_ing)  # skip csrf token
-        for item in list_ing:
-            ingredient = Ingredient.objects.filter(pk=request.POST[item]).first()
-            if ingredient and ingredient.ingredient_type:
-                pantry_item = PantryItem.objects.filter(
-                    user=request.user,
-                    ingredient_type=ingredient.ingredient_type,
-                ).first()
-                if pantry_item is None:
-                    continue
-                pq, pu = parse_amount(pantry_item.amount)
-                rq, ru = parse_amount(ingredient.measurment)
-                if pq is not None and rq is not None:
-                    sq, su = subtract_amounts(pq, pu, rq, ru)
-                    if sq is not None and sq > 0:
-                        pantry_item.amount = format_amount(sq, su)
-                        pantry_item.save()
-                    else:
-                        pantry_item.delete()
-                else:
-                    # Amounts not parseable — fall back to deleting the entry
-                    pantry_item.delete()
+    if not (request.user.is_authenticated and request.method == 'POST'):
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/recipes/'))
+
+    def _subtract(ingredient):
+        if not ingredient or not ingredient.ingredient_type:
+            return
+        pantry_item = PantryItem.objects.filter(
+            user=request.user,
+            ingredient_type=ingredient.ingredient_type,
+        ).first()
+        if pantry_item is None:
+            return
+        pq, pu = parse_amount(pantry_item.amount)
+        rq, ru = parse_amount(ingredient.measurment)
+        if pq is not None and rq is not None:
+            sq, su = subtract_amounts(pq, pu, rq, ru)
+            if sq is not None and sq > 0:
+                pantry_item.amount = format_amount(sq, su)
+                pantry_item.save()
+            else:
+                pantry_item.delete()
+        else:
+            pantry_item.delete()
+
+    # New format: repeated ingredient_ids field (dinner page)
+    ingredient_ids = request.POST.getlist('ingredient_ids')
+    if ingredient_ids:
+        for ing_id in ingredient_ids:
+            _subtract(Ingredient.objects.filter(pk=ing_id).first())
+    else:
+        # Legacy format: each unique field name carries one ingredient ID (recipe page)
+        for key, value in request.POST.items():
+            if key == 'csrfmiddlewaretoken':
+                continue
+            _subtract(Ingredient.objects.filter(pk=value).first())
+
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/recipes/'))
 
 

@@ -62,9 +62,9 @@ def suggest_meals(user_request, recipes, pantry_items, dinners=None, settings=No
         )
 
     try:
-        import google.generativeai as genai
+        from google import genai
     except ImportError:
-        return {}, '', 'google-generativeai is not installed (check requirements.txt).'
+        return {}, '', 'google-genai is not installed (check requirements.txt).'
 
     settings = settings or {}
     people = settings.get('people', '')
@@ -94,7 +94,7 @@ def suggest_meals(user_request, recipes, pantry_items, dinners=None, settings=No
     ) if settings_lines else ''
 
     try:
-        gmodel = genai.GenerativeModel('gemini-2.5-flash')
+        client = genai.Client()  # reads GOOGLE_API_KEY from environment automatically
 
         recipe_ctx = _recipe_context(recipes)
         pantry_ctx = _pantry_context(pantry_items)
@@ -150,7 +150,10 @@ def suggest_meals(user_request, recipes, pantry_items, dinners=None, settings=No
             f"Current pantry (oldest first — prioritise these):\n{pantry_ctx}"
         )
 
-        response = gmodel.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+        )
         raw = response.text.strip()
         # Strip markdown code fences if the model adds them
         if raw.startswith('```'):

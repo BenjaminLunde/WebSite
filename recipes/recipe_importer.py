@@ -132,13 +132,16 @@ def gemini_parse_recipe(page_text):
         )
 
     try:
-        import google.generativeai as genai
+        from google import genai
     except ImportError:
-        return None, 'google-generativeai is not installed (check requirements.txt).'
+        return None, 'google-genai is not installed (check requirements.txt).'
 
     try:
-        gmodel = genai.GenerativeModel('gemini-2.5-flash')
-        response = gmodel.generate_content(_PARSE_PROMPT + page_text)
+        client = genai.Client()  # reads GOOGLE_API_KEY from environment automatically
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=_PARSE_PROMPT + page_text,
+        )
         raw = response.text.strip()
         # Strip markdown code fences if present
         if raw.startswith('```'):
@@ -200,13 +203,16 @@ def generate_recipe(query):
         )
 
     try:
-        import google.generativeai as genai
+        from google import genai
     except ImportError:
-        return None, 'google-generativeai is not installed (check requirements.txt).'
+        return None, 'google-genai is not installed (check requirements.txt).'
 
     try:
-        gmodel = genai.GenerativeModel('gemini-2.5-flash')
-        response = gmodel.generate_content(_GENERATE_PROMPT + query)
+        client = genai.Client()  # reads GOOGLE_API_KEY from environment automatically
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=_GENERATE_PROMPT + query,
+        )
         raw = response.text.strip()
         if raw.startswith('```'):
             raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()

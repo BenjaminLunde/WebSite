@@ -35,10 +35,21 @@ def _dinner_context(dinners):
 def _pantry_context(pantry_items):
     if not pantry_items:
         return 'Pantry is empty'
-    return '\n'.join(
-        f"- {p.name} ({p.amount}), added {p.added_date.strftime('%Y-%m-%d')}"
-        for p in pantry_items
-    )
+
+    staples = [p for p in pantry_items if p.ingredient_type and p.ingredient_type.is_staple]
+    perishables = [p for p in pantry_items if not (p.ingredient_type and p.ingredient_type.is_staple)]
+
+    lines = []
+    if perishables:
+        lines.append('Perishables — prioritise the oldest (listed first):')
+        for p in sorted(perishables, key=lambda x: x.added_date):
+            lines.append(f"  - {p.name} ({p.amount}), added {p.added_date.strftime('%Y-%m-%d')}")
+    if staples:
+        lines.append('Pantry staples (always available — no need to rush these):')
+        for p in staples:
+            lines.append(f"  - {p.name} ({p.amount})")
+
+    return '\n'.join(lines) if lines else 'Pantry is empty'
 
 
 def suggest_meals(user_request, recipes, pantry_items, dinners=None, settings=None):
@@ -109,8 +120,9 @@ def suggest_meals(user_request, recipes, pantry_items, dinners=None, settings=No
             "'Curated dinners'. Never invent IDs.\n"
             "2. A 'dinner' entry is a full multi-course meal — do NOT add separate "
             "sides or extras alongside it.\n"
-            "3. PRIORITIZE using pantry ingredients, especially the oldest items "
-            "(listed first in the pantry).\n"
+            "3. PRIORITIZE using perishable pantry ingredients (oldest first). "
+            "Pantry staples (flour, sugar, spices, etc.) are always available — "
+            "don't prioritise them just because they've been there a long time.\n"
             "4. Aim for VARIETY — avoid the same main protein or cuisine two days "
             "in a row.\n"
             "5. Respect ALL dietary restrictions in SETTINGS — this is non-negotiable.\n"
@@ -147,7 +159,7 @@ def suggest_meals(user_request, recipes, pantry_items, dinners=None, settings=No
             f"User request:\n{user_request}\n\n"
             f"Available recipes:\n{recipe_ctx}\n\n"
             f"Curated dinners (full multi-course meals):\n{dinner_ctx}\n\n"
-            f"Current pantry (oldest first — prioritise these):\n{pantry_ctx}"
+            f"Current pantry:\n{pantry_ctx}"
         )
 
         response = client.models.generate_content(

@@ -1,70 +1,115 @@
 {% extends 'base.html' %}
 
 {% block content %}
-{% if tagg_list %}
+<div style="padding-top: 40px; padding-left: 60px; padding-right: 60px;">
+    <h1>Shopping List</h1>
 
-<div style="padding-top: 40px; padding-left:60px;">
-    <h1> Shopping List </h1>
-    <ul class="list-inline list-unstyled mt-5" style="padding-right:60px;">
-        <form action="/recipes/shopping/" method="post">
-                {% csrf_token %}
-                <li class="list-inline-item mb-2">
-                    <label for="ingredient_type">Add something to the shopping list</label>
-                    <select class="form-control" name="ingredient_type" id="ingredient_type">
-                    {% for itype in ingredient_type_list %}
-                    <option value="{{ itype.id }}">{{ itype.name }}</option>
-                    {% endfor %}
-                    </select>
-                </li>
-                <li class="list-inline-item mb-2">
-                    <input type="number" name="qty" min="0.01" step="any" required
-                           class="form-control" style="width:90px;" placeholder="qty">
-                </li>
-                <li class="list-inline-item mb-2">
-                    <select name="unit" class="form-control" style="width:75px;">
-                        {% for u in units %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
-                    </select>
-                </li>
-                <button type="submit" class="btn btn-primary">Add</button>
+    <!-- ── Add item form ─────────────────────────────────────────── -->
+    <div class="mt-4 mb-4">
+        <form action="/recipes/shopping/" method="post" class="form-inline flex-wrap">
+            {% csrf_token %}
+            <label class="mr-2 mb-2">Add item:</label>
+            <select class="form-control mr-2 mb-2" name="ingredient_type">
+                {% for itype in ingredient_type_list %}
+                <option value="{{ itype.id }}">{{ itype.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="qty" min="0.01" step="any" required
+                   class="form-control mr-2 mb-2" style="width:90px;" placeholder="qty">
+            <select name="unit" class="form-control mr-2 mb-2" style="width:75px;">
+                {% for u in units %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary mb-2">Add</button>
         </form>
-
-        <a href="/recipes/delete_all"><button type="button" class="btn btn-danger float-right">Empty shopping</button></a>
-    </ul>
-    
-    <div class="row pt-5 pb-5" style="width: 100%;">
-        {% for tagg in tagg_list %}
-        <!--Ingredents -->
-        <div class=" text-white bg-primary order-lg-2 col-lg-3 border border-white">
-            <div class=" card-body pt-4 pl-4 pr-4" style="padding-bottom: 10px; padding-left: 10px;">
-                <h6 class="card-title" style="text-align:center;">{{tagg.name}}</h6>
-                <hr style="height:2px;border-width:0;color:white;background-color:white">
-                <div class="tab-content">
-                    {% for item in shop_list %}
-                    {% if item.ingredient.tagg == tagg %}
-                    <div class="custom-control custom-checkbox">
-                        <ul class="list-inline list-unstyled mt-4">
-                            <li class="list-inline-item"> <input type="checkbox" class="custom-control-input" id="{{tagg.id}}{{ forloop.counter }}" style="width: 20px; height: 20px;"> <label class="custom-control-label" for="{{tagg.id}}{{ forloop.counter }}" style="font-size: 16px;">{{ item.ingredient.measurment }} {{ item.ingredient.name }}</label> </input>  </li>
-                            <li class="list-inline-item float-right">
-                                <form action="/recipes/pantry/add/" method="post" style="display:inline;">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="shop_item_id" value="{{ item.id }}">
-                                    <button type="submit" class="btn btn-success" style="padding:2px;" title="Move to Pantry"><i class="fas fa-box-open"></i></button>
-                                </form>
-                                <a href="/recipes/delete/{{item.id}}"> <button type="button" class="btn btn-primary" style="padding:2px;"> Delete <i class="fa fa-trash -fluid" style="padding-left: 10px;"></i> </button></a>
-                            </li>
-                        </ul>
-                    </div>
-                    {% endif %}
-                    {% endfor %}
-                </div>
-            </div>    
-        </div>
-        {% endfor %}
     </div>
+
+    {% if has_items %}
+    <!-- ── Main shopping form ────────────────────────────────────── -->
+    <form id="pantryForm" action="/recipes/shopping/add-to-pantry/" method="post">
+        {% csrf_token %}
+
+        <!-- Action bar -->
+        <div class="d-flex align-items-center mb-4 flex-wrap" style="gap: 8px;">
+            <button type="button" onclick="toggleCheckAll()" class="btn btn-secondary">
+                Check all
+            </button>
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-box-open mr-1"></i> Add checked to Pantry
+            </button>
+            <a href="/recipes/delete_all" class="btn btn-danger ml-auto">
+                Empty list
+            </a>
+        </div>
+
+        <!-- Category cards -->
+        <div class="row pb-5">
+            {% for tagg, items in tagg_with_items %}
+            <div class="text-white bg-primary col-lg-3 border border-white mb-3">
+                <div class="card-body pt-4 pl-3 pr-3 pb-3">
+                    <h6 class="card-title text-center">{{ tagg.name }}</h6>
+                    <hr style="height:2px;border-width:0;color:white;background-color:white;">
+
+                    {% for item in items %}
+                    <div class="mb-3">
+                        <!-- Name row: checkbox  |  ingredient name  |  delete -->
+                        <div class="d-flex align-items-center">
+                            <input type="checkbox"
+                                   name="shop_ids"
+                                   value="{{ item.obj.id }}"
+                                   id="chk_{{ item.obj.id }}"
+                                   class="shop-checkbox"
+                                   style="width:20px;height:20px;flex-shrink:0;">
+                            <label for="chk_{{ item.obj.id }}"
+                                   class="ml-2 mb-0"
+                                   style="font-size:16px;flex:1;cursor:pointer;">
+                                {{ item.obj.ingredient.name }}
+                            </label>
+                            <a href="/recipes/delete/{{ item.obj.id }}"
+                               class="btn btn-sm btn-outline-light ml-2"
+                               title="Remove from list">
+                                <i class="fa fa-trash"></i>
+                            </a>
+                        </div>
+
+                        <!-- Quantity row: editable qty + unit select -->
+                        <div class="d-flex align-items-center mt-1" style="padding-left:28px;">
+                            <input type="number"
+                                   name="qty_{{ item.obj.id }}"
+                                   value="{{ item.qty }}"
+                                   min="0.01" step="any"
+                                   class="form-control form-control-sm"
+                                   style="width:80px;"
+                                   title="Change quantity before adding to pantry">
+                            <select name="unit_{{ item.obj.id }}"
+                                    class="form-control form-control-sm ml-1"
+                                    style="width:70px;"
+                                    title="Unit">
+                                {% for u in units %}
+                                <option value="{{ u }}" {% if u == item.unit %}selected{% endif %}>{{ u }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </form>
+
+    {% else %}
+    <p class="text-muted mt-3">
+        Your shopping list is empty. Add items above or send ingredients from a recipe.
+    </p>
+    {% endif %}
 </div>
 
-
-{% else %}
-    <p>Taggs are available.</p>
-{% endif %}
+<script>
+function toggleCheckAll() {
+    var boxes = document.querySelectorAll('.shop-checkbox');
+    var allChecked = Array.prototype.every.call(boxes, function(b) { return b.checked; });
+    Array.prototype.forEach.call(boxes, function(b) { b.checked = !allChecked; });
+}
+</script>
 {% endblock %}

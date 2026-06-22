@@ -1,5 +1,6 @@
 import os
 import json
+from collections import defaultdict
 
 from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse
@@ -96,13 +97,34 @@ def shopping(request):
 
         tagg_list = Tagg.objects.order_by('id')
         ingredient_type_list = IngredientType.objects.order_by('name')
-        shop_list = IngredientToShop.objects.filter(shopper=current_user).select_related(
+        shop_qs = IngredientToShop.objects.filter(shopper=current_user).select_related(
             'ingredient__ingredient_type__tagg'
         )
+
+        # Pre-parse qty/unit for each item and group by tagg
+        items_by_tagg = defaultdict(list)
+        for item in shop_qs:
+            qty, unit_parsed = parse_amount(item.ingredient.measurment)
+            item_data = {
+                'obj': item,
+                'qty': qty if qty is not None else '',
+                'unit': unit_parsed if unit_parsed else UNITS[0],
+            }
+            tagg = item.ingredient.tagg
+            if tagg:
+                items_by_tagg[tagg.id].append(item_data)
+
+        # Only pass categories that actually have items
+        tagg_with_items = [
+            (tagg, items_by_tagg[tagg.id])
+            for tagg in tagg_list
+            if items_by_tagg[tagg.id]
+        ]
+
         context = {
-            'tagg_list': tagg_list,
+            'tagg_with_items': tagg_with_items,
             'ingredient_type_list': ingredient_type_list,
-            'shop_list': shop_list,
+            'has_items': shop_qs.exists(),
             'units': UNITS,
         }
         return render(request, 'recipes/shopping.html', context)
@@ -231,6 +253,56 @@ def add_to_pantry(request):
                 amount=new_amount,
             )
             obj.delete()
+    return HttpResponseRedirect('/recipes/pantry/')
+
+
+def add_checked_to_pantry(request):
+    """Move all checked shopping items to pantry, respecting any quantity edits the user made."""
+    if request.user.is_authenticated and request.method == 'POST':
+        shop_ids = request.POST.getlist('shop_ids')
+        for shop_id in shop_ids:
+            obj = IngredientToShop.objects.filter(id=shop_id, shopper=request.user).first()
+            if not obj or not obj.ingredient.ingredient_type:
+                continue
+
+            # Apply updated quantity if the user changed it in the shopping view
+            new_qty_str = request.POST.get(f'qty_{shop_id}', '').strip()
+            new_unit = request.POST.get(f'unit_{shop_id}', '').strip()
+            if new_qty_str and new_unit in UNITS:
+                try:
+                    from decimal import Decimal
+                    new_qty_val = Decimal(new_qty_str)
+                    obj.ingredient.measurment = format_amount(new_qty_val, new_unit)
+                    obj.ingredient.save()
+                except Exception:
+                    pass
+
+            itype = obj.ingredient.ingredient_type
+            new_amount = obj.ingredient.measurment
+            new_qty_parsed, new_unit_parsed = parse_amount(new_amount)
+
+            existing = PantryItem.objects.filter(
+                user=request.user, ingredient_type=itype
+            ).first()
+
+            if existing and new_qty_parsed is not None:
+                pq, pu = parse_amount(existing.amount)
+                if pq is not None:
+                    rq, ru = add_amounts(pq, pu, new_qty_parsed, new_unit_parsed)
+                    if rq is not None:
+                        existing.amount = format_amount(rq, ru)
+                        existing.save()
+                        obj.delete()
+                        continue
+
+            # Fallback: create a fresh pantry entry (incompatible units or no existing item)
+            PantryItem.objects.create(
+                user=request.user,
+                ingredient_type=itype,
+                amount=new_amount,
+            )
+            obj.delete()
+
     return HttpResponseRedirect('/recipes/pantry/')
 
 

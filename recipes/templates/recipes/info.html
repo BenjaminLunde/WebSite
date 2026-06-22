@@ -33,7 +33,13 @@
     <div class="row" style="width: 100%; max-height:100%;">
         <div class="col-lg-6 d-flex align-items-center">
             <div class="px-3 px-md-5 pb-4 pt-4" style="width:100%">
-                {% if info.photo %}<img class="img-fluid mb-2" style="width:100%; height:auto; object-fit:cover;" src="/media/{{ info.photo }}">{% endif %}
+                {% if info.photo %}
+                <img class="img-fluid mb-2" style="width:100%; height:auto; object-fit:cover;" src="/media/{{ info.photo }}">
+                {% else %}
+                <div class="mb-2 d-flex align-items-center justify-content-center" style="width:100%; aspect-ratio:4/3; background:#f0f0f0; border-radius:8px;">
+                    <i class="fas fa-camera" style="font-size:3rem; color:#ccc;"></i>
+                </div>
+                {% endif %}
             </div>
         </div>
 

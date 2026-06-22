@@ -7,6 +7,10 @@
     {% if dinner.photo %}
     <img class="img-fluid mb-4" src="/media/{{ dinner.photo }}"
          style="width: 100%; max-height: 320px; object-fit: cover; border-radius: 8px;" alt="{{ dinner.title }}">
+    {% else %}
+    <div class="mb-4 d-flex align-items-center justify-content-center" style="width:100%; height:220px; background:#f0f0f0; border-radius:8px;">
+        <i class="fas fa-camera" style="font-size:3rem; color:#ccc;"></i>
+    </div>
     {% endif %}
 
     <h1 class="blueText mb-1">{{ dinner.title }}</h1>

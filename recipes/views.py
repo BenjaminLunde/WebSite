@@ -14,7 +14,7 @@ from django.http import HttpResponseRedirect
 from django.contrib.auth.models import User
 from .models import (
     Info, Tagg, RecipeTag, Ingredient, IngredientType, IngredientForm,
-    IngredientToShop, PantryItem, Dinner, DinnerComponent, RecipeSource,
+    Instruction, IngredientToShop, PantryItem, Dinner, DinnerComponent, RecipeSource,
 )
 from .units import UNITS, parse_amount, format_amount, add_amounts, subtract_amounts
 

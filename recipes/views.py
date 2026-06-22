@@ -525,10 +525,9 @@ def add_plan_to_shop(request):
         recipe = Info.objects.filter(pk=recipe_id).first()
         if recipe:
             for ingredient in recipe.ingredient_set.select_related('ingredient_type').all():
-                if ingredient.ingredient_type:
-                    _add_to_shop_list(
-                        request.user, ingredient.ingredient_type, ingredient.measurment
-                    )
+                itype = ingredient.ingredient_type
+                if itype and not itype.is_staple:
+                    _add_to_shop_list(request.user, itype, ingredient.measurment)
 
     # Full dinners — add every component's ingredients
     for dinner_id in request.POST.getlist('dinner_ids'):
@@ -538,10 +537,9 @@ def add_plan_to_shop(request):
                 for ingredient in comp.recipe.ingredient_set.select_related(
                     'ingredient_type'
                 ).all():
-                    if ingredient.ingredient_type:
-                        _add_to_shop_list(
-                            request.user, ingredient.ingredient_type, ingredient.measurment
-                        )
+                    itype = ingredient.ingredient_type
+                    if itype and not itype.is_staple:
+                        _add_to_shop_list(request.user, itype, ingredient.measurment)
 
     return HttpResponseRedirect('/recipes/shopping/')
 

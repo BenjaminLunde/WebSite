@@ -214,15 +214,25 @@ def pantry(request):
                             user=current_user, ingredient_type=itype, amount=new_amount
                         )
 
-        tagg_list = Tagg.objects.order_by('id')
         ingredient_type_list = IngredientType.objects.order_by('name')
         pantry_list = PantryItem.objects.filter(user=current_user).select_related(
             'ingredient_type__tagg'
         ).order_by('added_date')
+
+        # Only include categories that have at least one item (like shopping page)
+        tagg_with_items = []
+        seen = {}
+        for item in pantry_list:
+            tagg = item.tagg
+            if tagg not in seen:
+                seen[tagg] = []
+                tagg_with_items.append((tagg, seen[tagg]))
+            seen[tagg].append(item)
+
         context = {
-            'tagg_list': tagg_list,
+            'tagg_with_items': tagg_with_items,
+            'has_items': bool(tagg_with_items),
             'ingredient_type_list': ingredient_type_list,
-            'pantry_list': pantry_list,
             'units': UNITS,
         }
         return render(request, 'recipes/pantry.html', context)

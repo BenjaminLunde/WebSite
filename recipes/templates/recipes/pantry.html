@@ -29,6 +29,8 @@
     <form action="/recipes/pantry/delete_selected/" method="post" id="pantryForm">
         {% csrf_token %}
 
+        {% if has_items %}
+
         <!-- Check all at top -->
         <div class="mb-3">
             <button type="button" class="btn btn-secondary" onclick="checkAllPantry()">
@@ -36,15 +38,14 @@
             </button>
         </div>
 
-        <!-- Category cards -->
+        <!-- Category cards — only categories with items -->
         <div class="row">
-            {% for tagg in tagg_list %}
+            {% for tagg, items in tagg_with_items %}
             <div class="text-white bg-primary col-12 col-sm-6 col-lg-3 border border-white mb-3">
                 <div class="card-body pt-4 pl-3 pr-3 pb-3">
                     <h6 class="card-title text-center">{{ tagg.name }}</h6>
                     <hr style="height:2px;border-width:0;color:white;background-color:white">
-                    {% for item in pantry_list %}
-                    {% if item.tagg == tagg %}
+                    {% for item in items %}
                     <div class="d-flex align-items-center mb-3">
                         <input type="checkbox"
                                name="pantry_ids"
@@ -71,7 +72,6 @@
                             <i class="fa fa-trash"></i>
                         </a>
                     </div>
-                    {% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -79,14 +79,19 @@
         </div>
 
         <!-- Action bar below items -->
-        <div class="d-flex align-items-center mt-3 mb-4 flex-wrap" style="gap: 8px;">
-            <a href="/recipes/pantry/delete_all/" class="btn btn-danger">
+        <div class="d-flex mt-3 mb-4" style="gap: 8px;">
+            <a href="/recipes/pantry/delete_all/" class="btn btn-danger flex-fill">
                 <i class="fas fa-trash mr-1"></i>Empty pantry
             </a>
-            <button type="submit" class="btn btn-secondary ml-auto">
+            <button type="submit" class="btn btn-secondary flex-fill">
                 <i class="fas fa-minus-circle mr-1"></i>Remove selected
             </button>
         </div>
+
+        {% else %}
+        <p class="text-muted mt-3">Your pantry is empty. Add items above.</p>
+        {% endif %}
+
     </form>
 
 </div>

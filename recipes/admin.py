@@ -1,7 +1,7 @@
 from django.contrib import admin
 from recipes.models import (
     Ingredient, Instruction, Tagg, RecipeTag, PantryItem,
-    IngredientType, Dinner, DinnerComponent,
+    IngredientType, Dinner, DinnerComponent, RecipeSource,
 )
 from django.contrib.auth.models import User
 
@@ -50,3 +50,15 @@ admin.site.register(Info, InfoAdmin)
 admin.site.register(Tagg)
 admin.site.register(RecipeTag)
 admin.site.register(PantryItem)
+
+
+@admin.register(RecipeSource)
+class RecipeSourceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'base_url', 'is_active')
+    list_filter = ('is_active',)
+    help_texts = {
+        'search_url_pattern': (
+            'Use {query} as a placeholder for the search term. '
+            'Example: https://www.allrecipes.com/search?q={query}'
+        )
+    }

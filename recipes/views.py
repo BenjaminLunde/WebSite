@@ -13,7 +13,7 @@ from django.http import HttpResponseRedirect
 from django.contrib.auth.models import User
 from .models import (
     Info, Tagg, RecipeTag, Ingredient, IngredientType, IngredientForm,
-    IngredientToShop, PantryItem, Dinner, DinnerComponent,
+    IngredientToShop, PantryItem, Dinner, DinnerComponent, RecipeSource,
 )
 from .units import UNITS, parse_amount, format_amount, add_amounts, subtract_amounts
 
@@ -23,11 +23,14 @@ from .units import UNITS, parse_amount, format_amount, add_amounts, subtract_amo
 def index(request):
     tag_id = request.GET.get('tag')
     all_tags = RecipeTag.objects.order_by('name')
+    # Only staff/superusers can see draft recipes
+    base_qs = Info.objects.all() if (request.user.is_authenticated and request.user.is_staff) \
+        else Info.objects.filter(is_draft=False)
     if tag_id:
-        recipe_list = Info.objects.filter(recipe_tags__id=tag_id).order_by('-pub_date')
+        recipe_list = base_qs.filter(recipe_tags__id=tag_id).order_by('-pub_date')
         selected_tag = RecipeTag.objects.filter(id=tag_id).first()
     else:
-        recipe_list = Info.objects.order_by('-pub_date')
+        recipe_list = base_qs.order_by('-pub_date')
         selected_tag = None
     context = {
         'latest_info_list': recipe_list,
@@ -418,6 +421,98 @@ def add_dinner_to_shop(request):
         for ingredient in comp.recipe.ingredient_set.all():
             IngredientToShop.objects.create(shopper=request.user, ingredient=ingredient)
     return HttpResponseRedirect('/recipes/shopping/')
+
+
+def log_cook(request, info_id):
+    """
+    POST: update the cook-log fields (last_cooked, score, revision_notes) on a recipe.
+    Only authenticated users can log cooks.
+    """
+    if not request.user.is_authenticated or request.method != 'POST':
+        return HttpResponseRedirect(f'/recipes/{info_id}/')
+
+    import datetime
+    recipe = get_object_or_404(Info, pk=info_id)
+
+    raw_date = request.POST.get('last_cooked', '').strip()
+    raw_score = request.POST.get('score', '').strip()
+    notes = request.POST.get('revision_notes', '').strip()
+
+    # Date
+    if raw_date:
+        try:
+            recipe.last_cooked = datetime.date.fromisoformat(raw_date)
+        except ValueError:
+            pass
+    else:
+        recipe.last_cooked = datetime.date.today()
+
+    # Score (1–10)
+    if raw_score:
+        try:
+            score_val = int(raw_score)
+            if 1 <= score_val <= 10:
+                recipe.score = score_val
+        except ValueError:
+            pass
+
+    recipe.revision_notes = notes
+    recipe.save()
+    return HttpResponseRedirect(f'/recipes/{info_id}/')
+
+
+def import_recipe(request):
+    """
+    Superuser-only page to import a recipe from a trusted cooking website.
+    GET:  show the import form (sources list + URL/search input).
+    POST: run the import and redirect to the new draft recipe.
+    """
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return HttpResponseRedirect('/recipes/')
+
+    sources = RecipeSource.objects.filter(is_active=True)
+    error = ''
+    preview = None
+    source_url = ''
+
+    if request.method == 'POST':
+        from .recipe_importer import import_from_url, search_and_import, create_draft_recipe
+
+        direct_url = request.POST.get('direct_url', '').strip()
+        search_query = request.POST.get('search_query', '').strip()
+
+        if direct_url:
+            data, source_url, error = import_from_url(direct_url)
+        elif search_query:
+            data, source_url, error = search_and_import(search_query, sources)
+        else:
+            error = 'Please enter a URL or a search term.'
+            data = None
+
+        if data and not error:
+            recipe = create_draft_recipe(data)
+            return HttpResponseRedirect(f'/recipes/{recipe.id}/')
+
+        preview = data  # Show partial preview even on error
+
+    context = {
+        'sources': sources,
+        'error': error,
+        'preview': preview,
+        'source_url': source_url,
+    }
+    return render(request, 'recipes/import_recipe.html', context)
+
+
+def publish_recipe(request, info_id):
+    """Superuser only: toggle a recipe between draft and published."""
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return HttpResponseRedirect('/recipes/')
+    if request.method == 'POST':
+        recipe = get_object_or_404(Info, pk=info_id)
+        recipe.is_draft = not recipe.is_draft
+        recipe.save()
+    return HttpResponseRedirect(f'/recipes/{info_id}/')
 
 
 class SignUpView(generic.CreateView):

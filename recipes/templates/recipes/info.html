@@ -2,13 +2,24 @@
 
 {% block content %}
 
+    {% if info.is_draft and request.user.is_staff %}
+    <!-- Draft banner (superuser only) -->
+    <div class="alert alert-warning mb-0 text-center" style="border-radius:0;">
+        <strong>Draft recipe</strong> — only visible to staff.
+        <form method="post" action="/recipes/{{ info.id }}/publish/" class="d-inline ml-3">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-success">Publish</button>
+        </form>
+    </div>
+    {% endif %}
+
     <div class="row" style="width: 100%; max-height:100%;">
         <div class="col-lg-6 d-flex align-items-center">
             <div class="pl-5 pr-5 pb-5 pt-5" style="width:100%">
                 {% if info.photo %}<img class="img-fluid mb-2" style="width:100%; height:auto; object-fit:cover;" src="/media/{{ info.photo }}">{% endif %}
             </div>
         </div>
-        
+
         <div class="col-lg-4 col-md-6 col-sm-12 col-12 match d-flex align-items-center order-sm-2 order-lg-2 order-md-2 order-1">
             <div class="pt-5 pb-5 pl-5 pr-5 aos-init aos-animate" data-aos="fade-left">
 
@@ -22,15 +33,54 @@
                 <div data-aos="fade-up" data-aos-duration="1100" class="aos-init aos-animate"><p style="font-weight: 400;"> {{ info.intro }} </p></div>
                 <ul class="list-inline list-unstyled mt-5">
                     <li class="list-inline-item mb-2 aos-init" data-aos="fade-up" data-aos-duration="1200">
-                        <i class="fa fa-user pr-1" aria-hidden="true" style="height:25px;" alt="servings">  {{ info.servings }} porsjoner  </i>	
+                        <i class="fa fa-user pr-1" aria-hidden="true" style="height:25px;" alt="servings">  {{ info.servings }} porsjoner  </i>
                     </li>
                     <li class="list-inline-item mb-2 aos-init" data-aos="fade-up" data-aos-duration="1300">
-                        <i class="fas fa-clock pr-1" aria-hidden="true" style="height:25px;" alt="time"> {{ info.time }} </i>	
+                        <i class="fas fa-clock pr-1" aria-hidden="true" style="height:25px;" alt="time"> {{ info.time }} </i>
                     </li>
                 </ul>
+
+                <!-- Cook log summary -->
+                {% if info.last_cooked or info.score %}
+                <div class="mt-3 p-3" style="background: rgba(0,0,0,0.05); border-radius: 8px;">
+                    {% if info.last_cooked %}
+                    <small class="text-muted d-block">
+                        <i class="fas fa-calendar-check mr-1"></i>
+                        Last cooked: <strong>{{ info.last_cooked }}</strong>
+                    </small>
+                    {% endif %}
+                    {% if info.score %}
+                    <small class="text-muted d-block mt-1">
+                        <i class="fas fa-star mr-1" style="color:#f0ad4e;"></i>
+                        Score: <strong>{{ info.score }}/10</strong>
+                        {% for i in "1234567890" %}{% if forloop.counter <= info.score %}⭐{% endif %}{% endfor %}
+                    </small>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if request.user.is_authenticated %}
+                <!-- Log Cook button -->
+                <button type="button" class="btn btn-outline-secondary mt-3"
+                        data-toggle="modal" data-target="#logCookModal">
+                    <i class="fas fa-utensils mr-1"></i> Log a Cook
+                </button>
+                {% endif %}
             </div>
         </div>
     </div>
+
+    <!-- Revision notes reminder (shown above ingredients if notes exist) -->
+    {% if info.revision_notes %}
+    <div class="row" style="width:100%; padding-left:40px; padding-right:40px;">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <strong><i class="fas fa-sticky-note mr-1"></i> Notes for next time:</strong>
+                {{ info.revision_notes }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="row pt-5 pb-5" style="width: 100%;">
         <!--Ingredents -->
@@ -67,10 +117,10 @@
                     <li class="list-inline-item mb-3"><button type="submit" class="btn btn-secondary" formaction="/recipes/remove_used/">Remove selected from Pantry</button></li>
                     </form>
                 </div>
-            </div>    
+            </div>
         </div>
 
-        <div class="order-lg-1 col-lg-7"> 
+        <div class="order-lg-1 col-lg-7">
             <div class="pt-5 pb-5 pl-5 pr-5">
                 <h4 style="text-align:center;">Slik gjør du</h4>
                 <table class="table table-hover">
@@ -86,7 +136,7 @@
             </div>
         </div>
 
- 
+
     </div>
 
     {% if dinners %}
@@ -119,6 +169,63 @@
             </a>
         </div>
         {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Log Cook Modal -->
+    {% if request.user.is_authenticated %}
+    <div class="modal fade" id="logCookModal" tabindex="-1" role="dialog" aria-labelledby="logCookModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="logCookModalLabel">
+                        <i class="fas fa-utensils mr-2"></i>Log a Cook — {{ info.title }}
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form method="post" action="/recipes/{{ info.id }}/log-cook/">
+                    {% csrf_token %}
+                    <div class="modal-body">
+
+                        <div class="form-group">
+                            <label for="last_cooked">Date cooked</label>
+                            <input type="date" class="form-control" id="last_cooked" name="last_cooked"
+                                   value="{{ info.last_cooked|default:'' }}">
+                            <small class="form-text text-muted">Leave blank to use today's date.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="score">Score <span class="text-muted">(1–10)</span></label>
+                            <div class="d-flex align-items-center">
+                                <input type="range" class="custom-range mr-3" id="score" name="score"
+                                       min="1" max="10" step="1"
+                                       value="{{ info.score|default:7 }}"
+                                       oninput="document.getElementById('scoreDisplay').textContent = this.value"
+                                       style="flex:1;">
+                                <span id="scoreDisplay" class="badge badge-primary" style="font-size:1.1rem; min-width:2.5rem; text-align:center;">
+                                    {{ info.score|default:7 }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="revision_notes">Notes for next time</label>
+                            <textarea class="form-control" id="revision_notes" name="revision_notes"
+                                      rows="4" placeholder="What would you change? E.g. 'Add more garlic', 'Reduce cooking time by 5 min'...">{{ info.revision_notes }}</textarea>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save mr-1"></i> Save Cook Log
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
     {% endif %}
 

@@ -25,6 +25,14 @@ class Info(models.Model):
     servings = models.IntegerField(default=6)
     recipe_tags = models.ManyToManyField(RecipeTag, blank=True)
 
+    # Cook log — updated each time you finish cooking this recipe
+    last_cooked = models.DateField(null=True, blank=True)
+    score = models.IntegerField(null=True, blank=True, help_text="Your score 1–10")
+    revision_notes = models.TextField(blank=True, help_text="Notes to improve it next time")
+
+    # Drafts are only visible to staff (used by the recipe importer)
+    is_draft = models.BooleanField(default=False)
+
     def __str__(self):
         return self.title
 
@@ -164,6 +172,27 @@ class PantryItem(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class RecipeSource(models.Model):
+    """
+    Trusted cooking websites used by the recipe importer.
+    Add these via the Django admin — the import page will list them
+    and use their search patterns to find recipes.
+    """
+    name = models.CharField(max_length=100, help_text="Friendly name, e.g. 'AllRecipes'")
+    base_url = models.URLField(help_text="e.g. https://www.allrecipes.com")
+    search_url_pattern = models.CharField(
+        max_length=500, blank=True,
+        help_text="Search URL with {query} placeholder, e.g. https://www.allrecipes.com/search?q={query}"
+    )
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name']
 
 
 User._meta.get_field('email').blank = False

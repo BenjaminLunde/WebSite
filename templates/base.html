@@ -97,23 +97,6 @@ function eventCheckBox() {
                         <i class="fas fa-shopping-cart mr-1"></i>Shopping
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/recipes/pantry/">
-                        <i class="fas fa-box-open mr-1"></i>Pantry
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/recipes/meal-planner/">
-                        <i class="fas fa-calendar-alt mr-1"></i>Meal Planner
-                    </a>
-                </li>
-                {% endif %}
-                {% if user.is_superuser %}
-                <li class="nav-item">
-                    <a class="nav-link" href="/admin/">
-                        <i class="fas fa-cog mr-1"></i>Admin
-                    </a>
-                </li>
                 {% endif %}
                 <li class="nav-item">
                     <a class="nav-link" href="/recipes/">
@@ -125,6 +108,32 @@ function eventCheckBox() {
                         <i class="fas fa-book-open mr-1"></i>Recipes
                     </a>
                 </li>
+                {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/recipes/pantry/">
+                        <i class="fas fa-box-open mr-1"></i>Pantry
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/recipes/meal-planner/">
+                        <i class="fas fa-calendar-alt mr-1"></i>Meal Planner
+                    </a>
+                </li>
+                {% endif %}
+                {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/recipes/import/">
+                        <i class="fas fa-file-import mr-1"></i>Import Recipe
+                    </a>
+                </li>
+                {% endif %}
+                {% if user.is_superuser %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/">
+                        <i class="fas fa-cog mr-1"></i>Admin
+                    </a>
+                </li>
+                {% endif %}
             </ul>
             <ul class="navbar-nav ml-auto">
                 {% if user.is_authenticated %}

@@ -1,11 +1,14 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div style="padding-top: 40px; padding-left:40px;"></div>
-    <h2>Sign up</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Sign Up</button>
-    </form>
+<div class="d-flex justify-content-center" style="padding-top: 40px;">
+    <div class="w-100 px-3" style="max-width: 480px;">
+        <h2>Sign up</h2>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
+        </form>
+    </div>
+</div>
 {% endblock %}

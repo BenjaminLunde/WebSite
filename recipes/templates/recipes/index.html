@@ -4,7 +4,7 @@
 
 <!-- Tag filter pills -->
 {% if all_tags %}
-<div style="padding: 40px 40px 0 40px;">
+<div class="page-pad pb-0">
     <a href="/recipes/" class="btn btn-sm {% if not selected_tag %}btn-primary{% else %}btn-outline-primary{% endif %} mr-1 mb-2">All</a>
     {% for tag in all_tags %}
     <a href="/recipes/?tag={{ tag.id }}" class="btn btn-sm {% if selected_tag.id == tag.id %}btn-primary{% else %}btn-outline-primary{% endif %} mr-1 mb-2">{{ tag.name }}</a>
@@ -15,9 +15,9 @@
 {% if latest_info_list %}
 <div class="row filter" style="width: 100%;">
     {% for info in latest_info_list %}
-    <div class="col-lg-4 col-md-4 col-sm-4 col-12 mb-2">
+    <div class="col-lg-4 col-md-6 col-12 mb-2">
         <a href="/recipes/{{ info.id }}/">
-            <div class="pl-5 pr-5 pb-5 pt-5">
+            <div class="p-3 p-md-4">
                 {% if info.photo %}<img class="img-fluid list_image mb-2" src="{{MEDIA_URL}}{{ info.photo }}">{% endif %}
                 <ul class="list-inline">
                     <li class="list-inline-item"><h6>recipes</h6></li>

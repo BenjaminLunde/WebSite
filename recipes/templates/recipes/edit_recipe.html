@@ -10,14 +10,14 @@
 <input type="hidden" name="inst_count" id="inst_count" value="{{ instructions|length }}">
 
 {# ── Top save bar ───────────────────────────────────────────────────────── #}
-<div class="alert alert-info mb-0 d-flex align-items-center justify-content-between" style="border-radius:0; position:sticky; top:90px; z-index:100;">
-    <span><i class="fas fa-pencil-alt mr-2"></i>Editing <strong>{{ recipe.title }}</strong></span>
-    <div>
-        <a href="/recipes/{{ recipe.id }}/" class="btn btn-sm btn-secondary mr-2">
+<div class="alert alert-info mb-0 d-flex align-items-center justify-content-between flex-wrap" style="border-radius:0; position:sticky; top:70px; z-index:100; gap: 8px;">
+    <span class="mr-2"><i class="fas fa-pencil-alt mr-1"></i>Editing <strong>{{ recipe.title }}</strong></span>
+    <div class="d-flex" style="gap: 6px; flex-shrink: 0;">
+        <a href="/recipes/{{ recipe.id }}/" class="btn btn-sm btn-secondary">
             <i class="fas fa-times mr-1"></i>Cancel
         </a>
         <button type="submit" class="btn btn-sm btn-success">
-            <i class="fas fa-save mr-1"></i>Save Changes
+            <i class="fas fa-save mr-1"></i>Save
         </button>
     </div>
 </div>
@@ -27,7 +27,7 @@
 
     {# Photo column — placeholder only; upload via admin #}
     <div class="col-lg-6 d-flex align-items-center">
-        <div class="pl-5 pr-5 pb-5 pt-5" style="width:100%;">
+        <div class="px-3 px-md-5 pb-4 pt-4" style="width:100%;">
             {% if recipe.photo %}
             <img class="img-fluid mb-2" style="width:100%; height:auto; object-fit:cover;" src="/media/{{ recipe.photo }}">
             {% else %}
@@ -42,7 +42,7 @@
 
     {# Meta column #}
     <div class="col-lg-4 col-md-6 col-sm-12 col-12 d-flex align-items-center">
-        <div class="pt-5 pb-4 pl-5 pr-5" style="width:100%;">
+        <div class="pt-4 pb-4 px-3 px-md-5" style="width:100%;">
 
             {# Title #}
             <input type="text" name="title" value="{{ recipe.title }}"
@@ -93,7 +93,7 @@
 <div class="row pt-4 pb-5" style="width:100%;">
 
     {# ── Ingredients (blue sidebar, right on desktop) ── #}
-    <div class="text-white bg-primary order-lg-2 col-lg-4">
+    <div class="text-white bg-primary order-lg-2 col-12 col-lg-4">
         <div class="card-body pt-4 pl-4 pr-4">
             <h4 class="card-title text-center">Ingredienser</h4>
             <hr style="height:2px; border-width:0; color:white; background-color:white;">
@@ -133,8 +133,8 @@
     </div>
 
     {# ── Instructions (left on desktop) ── #}
-    <div class="order-lg-1 col-lg-7">
-        <div class="pt-4 pb-4 pl-5 pr-5">
+    <div class="order-lg-1 col-12 col-lg-7">
+        <div class="pt-4 pb-4 px-3 px-md-5">
             <h4 class="text-center">Slik gjør du</h4>
 
             <div id="inst-list">

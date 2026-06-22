@@ -3,11 +3,11 @@
 {% block content %}
 {% if ingredient_type_list %}
 
-<div style="padding-top: 40px; padding-left:60px;">
+<div class="page-pad">
     <h1>Pantry</h1>
 
     <!-- Add to pantry form -->
-    <ul class="list-inline list-unstyled mt-5" style="padding-right:60px;">
+    <ul class="list-inline list-unstyled mt-4">
         <form action="/recipes/pantry/" method="post">
             {% csrf_token %}
             <li class="list-inline-item mb-2">
@@ -35,23 +35,15 @@
     <form action="/recipes/pantry/delete_selected/" method="post" id="pantryForm">
         {% csrf_token %}
 
-        <ul class="list-inline list-unstyled mb-3" style="padding-right:60px;">
-            <li class="list-inline-item">
-                <button type="button" class="btn btn-secondary" onclick="checkAllPantry()">Check all</button>
-            </li>
-            <li class="list-inline-item">
-                <button type="submit" class="btn btn-secondary">Remove selected</button>
-            </li>
-            <li class="list-inline-item float-right">
-                <a href="/recipes/pantry/delete_all/">
-                    <button type="button" class="btn btn-dark">Empty pantry</button>
-                </a>
-            </li>
-        </ul>
+        <div class="d-flex flex-wrap align-items-center mb-3" style="gap: 8px;">
+            <button type="button" class="btn btn-secondary" onclick="checkAllPantry()">Check all</button>
+            <button type="submit" class="btn btn-secondary">Remove selected</button>
+            <a href="/recipes/pantry/delete_all/" class="btn btn-dark ml-auto">Empty pantry</a>
+        </div>
 
         <div class="row pt-3 pb-5" style="width: 100%;">
             {% for tagg in tagg_list %}
-            <div class="text-white bg-primary order-lg-2 col-lg-3 border border-white">
+            <div class="text-white bg-primary col-12 col-sm-6 col-lg-3 border border-white">
                 <div class="card-body pt-4 pl-4 pr-4" style="padding-bottom: 10px; padding-left: 10px;">
                     <h6 class="card-title" style="text-align:center;">{{tagg.name}}</h6>
                     <hr style="height:2px;border-width:0;color:white;background-color:white">
@@ -83,8 +75,8 @@
                                         </small>
                                     </label>
                                 </li>
-                                <li class="list-inline-item float-right">
-                                    <a href="/recipes/pantry/delete/{{item.id}}/"><button type="button" class="btn btn-primary" style="padding:2px;"> Delete <i class="fa fa-trash" style="padding-left: 10px;"></i> </button></a>
+                                <li class="list-inline-item">
+                                    <a href="/recipes/pantry/delete/{{item.id}}/"><button type="button" class="btn btn-sm btn-outline-light" title="Delete"><i class="fa fa-trash"></i></button></a>
                                 </li>
                             </ul>
                         </div>

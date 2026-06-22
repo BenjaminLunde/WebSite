@@ -32,13 +32,13 @@
 
     <div class="row" style="width: 100%; max-height:100%;">
         <div class="col-lg-6 d-flex align-items-center">
-            <div class="pl-5 pr-5 pb-5 pt-5" style="width:100%">
+            <div class="px-3 px-md-5 pb-4 pt-4" style="width:100%">
                 {% if info.photo %}<img class="img-fluid mb-2" style="width:100%; height:auto; object-fit:cover;" src="/media/{{ info.photo }}">{% endif %}
             </div>
         </div>
 
         <div class="col-lg-4 col-md-6 col-sm-12 col-12 match d-flex align-items-center order-sm-2 order-lg-2 order-md-2 order-1">
-            <div class="pt-5 pb-5 pl-5 pr-5 aos-init aos-animate" data-aos="fade-left">
+            <div class="pt-4 pb-4 px-3 px-md-5 aos-init aos-animate" data-aos="fade-left">
 
                 <h1 class="blueText mb-4 mt-3 aos-init aos-animate" data-aos="fade-up" data-aos-duration="900"> {{ info.title }} </h1>
                 <div class="mb-2">
@@ -101,8 +101,8 @@
 
     <div class="row pt-5 pb-5" style="width: 100%;">
         <!--Ingredents -->
-        <div class=" text-white bg-primary order-lg-2 col-lg-4">
-            <div class=" card-body pt-5 pl-5 pr-5">
+        <div class="text-white bg-primary order-lg-2 col-12 col-lg-4">
+            <div class="card-body pt-4 px-3 px-md-4">
                 <h4 class="card-title" style="text-align:center;">Ingredienser</h4>
                 <hr style="height:2px;border-width:0;color:white;background-color:white">
                 <div class="tab-content">
@@ -129,16 +129,18 @@
                     </div>
                     {% endwith %}
                     {% endfor %}
-                    <li class="list-inline-item mb-3"><button type="button" class="btn btn-secondary" onclick="eventCheckBox()" id="selectall" name="selectall">Check all boxes</button></li>
-                    <li class="list-inline-item mb-3"><button type="submit" class="btn btn-secondary">Add selected to Shoppinglist</button></li>
-                    <li class="list-inline-item mb-3"><button type="submit" class="btn btn-secondary" formaction="/recipes/remove_used/">Remove selected from Pantry</button></li>
+                    <div class="d-flex flex-wrap mt-3" style="gap: 8px;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="eventCheckBox()" id="selectall" name="selectall">Check all</button>
+                        <button type="submit" class="btn btn-secondary btn-sm">Add to Shopping list</button>
+                        <button type="submit" class="btn btn-secondary btn-sm" formaction="/recipes/remove_used/">Remove from Pantry</button>
+                    </div>
                     </form>
                 </div>
             </div>
         </div>
 
-        <div class="order-lg-1 col-lg-7">
-            <div class="pt-5 pb-5 pl-5 pr-5">
+        <div class="order-lg-1 col-12 col-lg-7">
+            <div class="pt-4 pb-4 px-3 px-md-5">
                 <h4 style="text-align:center;">Slik gjør du</h4>
                 <table class="table table-hover">
                     <thead>

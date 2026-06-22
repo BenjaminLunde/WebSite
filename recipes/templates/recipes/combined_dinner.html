@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div style="padding-top: 40px; padding-left: 60px; padding-right: 60px;">
+<div class="page-pad">
 
     <h1 class="blueText mb-1">{{ main.title }}</h1>
     {% for tag in main.recipe_tags.all %}
@@ -14,8 +14,8 @@
     <div class="row mt-5" style="width: 100%;">
 
         <!-- All ingredients merged -->
-        <div class="text-white bg-primary col-lg-4 order-lg-2">
-            <div class="card-body pt-5 pl-5 pr-5">
+        <div class="text-white bg-primary col-12 col-lg-4 order-lg-2">
+            <div class="card-body pt-4 px-3 px-md-5">
                 <h4 class="card-title" style="text-align:center;">All Ingredients</h4>
                 <hr style="height:2px;border-width:0;color:white;background-color:white">
 
@@ -65,8 +65,8 @@
         </div>
 
         <!-- All instructions in sections -->
-        <div class="order-lg-1 col-lg-7">
-            <div class="pt-5 pb-5 pl-5 pr-5">
+        <div class="order-lg-1 col-12 col-lg-7">
+            <div class="pt-4 pb-4 px-3 px-md-5">
 
                 <!-- Main recipe instructions -->
                 <h4 style="text-align:center;">{{ main.title }}</h4>

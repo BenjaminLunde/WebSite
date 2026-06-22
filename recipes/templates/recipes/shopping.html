@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div style="padding-top: 40px; padding-left: 60px; padding-right: 60px;">
+<div class="page-pad">
     <h1>Shopping List</h1>
 
     <!-- ── Add item form ─────────────────────────────────────────── -->
@@ -44,7 +44,7 @@
         <!-- Category cards -->
         <div class="row pb-5">
             {% for tagg, items in tagg_with_items %}
-            <div class="text-white bg-primary col-lg-3 border border-white mb-3">
+            <div class="text-white bg-primary col-12 col-sm-6 col-lg-3 border border-white mb-3">
                 <div class="card-body pt-4 pl-3 pr-3 pb-3">
                     <h6 class="card-title text-center">{{ tagg.name }}</h6>
                     <hr style="height:2px;border-width:0;color:white;background-color:white;">

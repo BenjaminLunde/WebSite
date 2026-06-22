@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div style="padding-top: 40px; padding-left: 60px; padding-right: 60px;">
+<div class="page-pad">
 
     <h1 class="blueText mb-1">{{ dinner.title }}</h1>
     <p class="text-muted mb-4">
@@ -11,8 +11,8 @@
     <div class="row" style="width: 100%;">
 
         <!-- Ingredients panel -->
-        <div class="text-white bg-primary col-lg-4 order-lg-2">
-            <div class="card-body pt-5 pl-5 pr-5">
+        <div class="text-white bg-primary col-12 col-lg-4 order-lg-2">
+            <div class="card-body pt-4 px-3 px-md-4">
                 <h4 class="card-title" style="text-align: center;">All Ingredients</h4>
                 <hr style="height: 2px; border-width: 0; color: white; background-color: white;">
 
@@ -74,8 +74,8 @@
         </div>
 
         <!-- Instructions panel -->
-        <div class="order-lg-1 col-lg-7">
-            <div class="pt-5 pb-5 pl-5 pr-5">
+        <div class="order-lg-1 col-12 col-lg-7">
+            <div class="pt-4 pb-4 px-3 px-md-5">
                 {% for component in components %}
 
                 <div class="d-flex align-items-center mb-2 mt-4">

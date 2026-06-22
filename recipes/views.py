@@ -423,6 +423,91 @@ def add_dinner_to_shop(request):
     return HttpResponseRedirect('/recipes/shopping/')
 
 
+def edit_recipe(request, info_id):
+    """
+    Staff-only: edit a recipe directly on a formatted page.
+    Uses the same two-column layout as the recipe view so you can see
+    what you're changing while you edit it.
+    """
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return HttpResponseRedirect(f'/recipes/{info_id}/')
+
+    recipe = get_object_or_404(Info, pk=info_id)
+
+    if request.method == 'POST':
+        # ── Basic fields ──────────────────────────────────────────────────────
+        recipe.title      = request.POST.get('title',      recipe.title).strip()
+        recipe.intro      = request.POST.get('intro',      recipe.intro).strip()
+        recipe.time       = request.POST.get('time',       recipe.time).strip()
+        try:
+            recipe.servings   = int(request.POST.get('servings',   recipe.servings))
+            recipe.difficulty = int(request.POST.get('difficulty', recipe.difficulty))
+        except (ValueError, TypeError):
+            pass
+        recipe.save()
+
+        # ── Tags ──────────────────────────────────────────────────────────────
+        tag_ids = request.POST.getlist('tags')
+        recipe.recipe_tags.set(RecipeTag.objects.filter(id__in=tag_ids))
+
+        # ── Ingredients ───────────────────────────────────────────────────────
+        # Form sends: ing_count, then for each index i:
+        #   ing_id_i   (empty = new row), ing_name_i, ing_amount_i, ing_delete_i
+        ing_count = int(request.POST.get('ing_count', 0))
+        for i in range(ing_count):
+            ing_id     = request.POST.get(f'ing_id_{i}',     '').strip()
+            ing_name   = request.POST.get(f'ing_name_{i}',   '').strip()
+            ing_amount = request.POST.get(f'ing_amount_{i}', '').strip()
+            ing_delete = request.POST.get(f'ing_delete_{i}', '') == '1'
+
+            if ing_id:
+                obj = Ingredient.objects.filter(pk=ing_id, info=recipe).first()
+                if obj:
+                    if ing_delete:
+                        obj.delete()
+                    elif ing_name:
+                        itype, _ = IngredientType.objects.get_or_create(name=ing_name)
+                        obj.ingredient_type = itype
+                        obj.measurment = ing_amount
+                        obj.save()
+            elif ing_name and not ing_delete:
+                itype, _ = IngredientType.objects.get_or_create(name=ing_name)
+                Ingredient.objects.create(info=recipe, ingredient_type=itype, measurment=ing_amount)
+
+        # ── Instructions ──────────────────────────────────────────────────────
+        inst_count = int(request.POST.get('inst_count', 0))
+        for i in range(inst_count):
+            inst_id     = request.POST.get(f'inst_id_{i}',     '').strip()
+            inst_text   = request.POST.get(f'inst_text_{i}',   '').strip()
+            inst_delete = request.POST.get(f'inst_delete_{i}', '') == '1'
+
+            if inst_id:
+                obj = Instruction.objects.filter(pk=inst_id, info=recipe).first()
+                if obj:
+                    if inst_delete:
+                        obj.delete()
+                    elif inst_text:
+                        obj.text = inst_text
+                        obj.save()
+            elif inst_text and not inst_delete:
+                Instruction.objects.create(info=recipe, text=inst_text)
+
+        return HttpResponseRedirect(f'/recipes/{info_id}/')
+
+    # ── GET ───────────────────────────────────────────────────────────────────
+    all_tags = RecipeTag.objects.order_by('name')
+    selected_tag_ids = set(recipe.recipe_tags.values_list('id', flat=True))
+
+    context = {
+        'recipe':           recipe,
+        'all_tags':         all_tags,
+        'selected_tag_ids': selected_tag_ids,
+        'ingredients':      list(recipe.ingredient_set.all()),
+        'instructions':     list(recipe.instruction_set.all()),
+    }
+    return render(request, 'recipes/edit_recipe.html', context)
+
+
 def log_cook(request, info_id):
     """
     POST: update the cook-log fields (last_cooked, score, revision_notes) on a recipe.

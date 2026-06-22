@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<form method="post" id="editForm">
+{% csrf_token %}
+
+{# Hidden counters — JS keeps these in sync #}
+<input type="hidden" name="ing_count"  id="ing_count"  value="{{ ingredients|length }}">
+<input type="hidden" name="inst_count" id="inst_count" value="{{ instructions|length }}">
+
+{# ── Top save bar ───────────────────────────────────────────────────────── #}
+<div class="alert alert-info mb-0 d-flex align-items-center justify-content-between" style="border-radius:0; position:sticky; top:90px; z-index:100;">
+    <span><i class="fas fa-pencil-alt mr-2"></i>Editing <strong>{{ recipe.title }}</strong></span>
+    <div>
+        <a href="/recipes/{{ recipe.id }}/" class="btn btn-sm btn-secondary mr-2">
+            <i class="fas fa-times mr-1"></i>Cancel
+        </a>
+        <button type="submit" class="btn btn-sm btn-success">
+            <i class="fas fa-save mr-1"></i>Save Changes
+        </button>
+    </div>
+</div>
+
+{# ── Header row (mirrors info.html layout) ──────────────────────────────── #}
+<div class="row" style="width:100%;">
+
+    {# Photo column — placeholder only; upload via admin #}
+    <div class="col-lg-6 d-flex align-items-center">
+        <div class="pl-5 pr-5 pb-5 pt-5" style="width:100%;">
+            {% if recipe.photo %}
+            <img class="img-fluid mb-2" style="width:100%; height:auto; object-fit:cover;" src="/media/{{ recipe.photo }}">
+            {% else %}
+            <div class="text-center text-muted py-5" style="border:2px dashed #ccc; border-radius:8px;">
+                <i class="fas fa-camera fa-3x mb-2"></i>
+                <p class="mb-1">No photo yet</p>
+                <small>Add a photo via <a href="/admin/recipes/info/{{ recipe.id }}/change/">Django admin</a></small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Meta column #}
+    <div class="col-lg-4 col-md-6 col-sm-12 col-12 d-flex align-items-center">
+        <div class="pt-5 pb-4 pl-5 pr-5" style="width:100%;">
+
+            {# Title #}
+            <input type="text" name="title" value="{{ recipe.title }}"
+                   class="form-control form-control-lg mb-3 font-weight-bold"
+                   style="font-size:1.6rem;" placeholder="Recipe title">
+
+            {# Tags #}
+            <div class="mb-3">
+                <label class="font-weight-bold d-block mb-1" style="font-size:0.85rem;">Tags</label>
+                {% for tag in all_tags %}
+                <div class="custom-control custom-checkbox custom-control-inline">
+                    <input type="checkbox" class="custom-control-input"
+                           id="tag_{{ tag.id }}" name="tags" value="{{ tag.id }}"
+                           {% if tag.id in selected_tag_ids %}checked{% endif %}>
+                    <label class="custom-control-label" for="tag_{{ tag.id }}">{{ tag.name }}</label>
+                </div>
+                {% endfor %}
+            </div>
+
+            {# Intro #}
+            <textarea name="intro" class="form-control mb-3" rows="4"
+                      placeholder="Short description of the recipe...">{{ recipe.intro }}</textarea>
+
+            {# Servings / Time / Difficulty #}
+            <div class="row">
+                <div class="col-4">
+                    <label class="small font-weight-bold"><i class="fa fa-user mr-1"></i>Servings</label>
+                    <input type="number" name="servings" value="{{ recipe.servings }}"
+                           class="form-control form-control-sm" min="1" max="99">
+                </div>
+                <div class="col-4">
+                    <label class="small font-weight-bold"><i class="fas fa-clock mr-1"></i>Time</label>
+                    <input type="text" name="time" value="{{ recipe.time }}"
+                           class="form-control form-control-sm" placeholder="30 min">
+                </div>
+                <div class="col-4">
+                    <label class="small font-weight-bold">Difficulty (1–5)</label>
+                    <input type="number" name="difficulty" value="{{ recipe.difficulty }}"
+                           class="form-control form-control-sm" min="1" max="5">
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{# ── Ingredients + Instructions (mirrors info.html two-column layout) ───── #}
+<div class="row pt-4 pb-5" style="width:100%;">
+
+    {# ── Ingredients (blue sidebar, right on desktop) ── #}
+    <div class="text-white bg-primary order-lg-2 col-lg-4">
+        <div class="card-body pt-4 pl-4 pr-4">
+            <h4 class="card-title text-center">Ingredienser</h4>
+            <hr style="height:2px; border-width:0; color:white; background-color:white;">
+
+            <div id="ing-list">
+                {% for ing in ingredients %}
+                <div class="ing-row d-flex align-items-center mb-2" data-index="{{ forloop.counter0 }}">
+                    {# Hidden fields — id + delete flag #}
+                    <input type="hidden" name="ing_id_{{ forloop.counter0 }}"     value="{{ ing.id }}">
+                    <input type="hidden" name="ing_delete_{{ forloop.counter0 }}" value="0" class="del-flag">
+                    {# Amount #}
+                    <input type="text" name="ing_amount_{{ forloop.counter0 }}"
+                           value="{{ ing.measurment }}"
+                           class="form-control form-control-sm mr-1"
+                           style="width:90px; flex-shrink:0; background:#fff; color:#333;"
+                           placeholder="200 g">
+                    {# Name #}
+                    <input type="text" name="ing_name_{{ forloop.counter0 }}"
+                           value="{{ ing.name }}"
+                           class="form-control form-control-sm mr-1"
+                           style="background:#fff; color:#333;"
+                           placeholder="Ingredient">
+                    {# Delete #}
+                    <button type="button" class="btn btn-sm btn-danger flex-shrink-0"
+                            onclick="deleteRow(this, 'ing')" title="Remove">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button type="button" class="btn btn-light btn-sm mt-2 btn-block"
+                    onclick="addIngredient()">
+                <i class="fas fa-plus mr-1"></i>Add ingredient
+            </button>
+        </div>
+    </div>
+
+    {# ── Instructions (left on desktop) ── #}
+    <div class="order-lg-1 col-lg-7">
+        <div class="pt-4 pb-4 pl-5 pr-5">
+            <h4 class="text-center">Slik gjør du</h4>
+
+            <div id="inst-list">
+                {% for inst in instructions %}
+                <div class="inst-row d-flex align-items-start mb-3" data-index="{{ forloop.counter0 }}">
+                    <input type="hidden" name="inst_id_{{ forloop.counter0 }}"     value="{{ inst.id }}">
+                    <input type="hidden" name="inst_delete_{{ forloop.counter0 }}" value="0" class="del-flag">
+                    {# Step number badge #}
+                    <span class="badge badge-primary mr-2 mt-1 flex-shrink-0"
+                          style="font-size:1rem; min-width:1.8rem; padding:.35rem .5rem;">
+                        {{ forloop.counter }}
+                    </span>
+                    {# Text #}
+                    <textarea name="inst_text_{{ forloop.counter0 }}"
+                              class="form-control mr-2" rows="2"
+                              placeholder="Describe this step...">{{ inst.text }}</textarea>
+                    {# Delete #}
+                    <button type="button" class="btn btn-sm btn-danger flex-shrink-0 mt-1"
+                            onclick="deleteRow(this, 'inst')" title="Remove step">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button type="button" class="btn btn-outline-primary btn-sm mt-1"
+                    onclick="addInstruction()">
+                <i class="fas fa-plus mr-1"></i>Add step
+            </button>
+        </div>
+    </div>
+
+</div>
+
+{# ── Bottom save bar ─────────────────────────────────────────────────────── #}
+<div class="text-center pb-5">
+    <a href="/recipes/{{ recipe.id }}/" class="btn btn-secondary mr-3">
+        <i class="fas fa-times mr-1"></i>Cancel
+    </a>
+    <button type="submit" class="btn btn-success btn-lg">
+        <i class="fas fa-save mr-1"></i>Save Changes
+    </button>
+</div>
+
+</form>
+
+<script>
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function ingCount()  { return parseInt(document.getElementById('ing_count').value);  }
+function instCount() { return parseInt(document.getElementById('inst_count').value); }
+
+function setIngCount(n)  { document.getElementById('ing_count').value  = n; }
+function setInstCount(n) { document.getElementById('inst_count').value = n; }
+
+// ── Delete an existing row (mark hidden flag = 1, hide visually) ─────────────
+// ── Delete a new row (just remove from DOM) ──────────────────────────────────
+function deleteRow(btn, type) {
+    const row = btn.closest('.' + type + '-row');
+    const idInput = row.querySelector('input[name^="' + type + '_id_"]');
+    if (idInput && idInput.value) {
+        // Existing DB row — mark deleted, hide
+        row.querySelector('.del-flag').value = '1';
+        row.style.display = 'none';
+    } else {
+        // New (unsaved) row — just remove from DOM and decrement counter
+        row.remove();
+        if (type === 'ing')  setIngCount(ingCount()  - 1);
+        if (type === 'inst') setInstCount(instCount() - 1);
+    }
+}
+
+// ── Add ingredient row ───────────────────────────────────────────────────────
+function addIngredient() {
+    const i = ingCount();
+    const list = document.getElementById('ing-list');
+    const div = document.createElement('div');
+    div.className = 'ing-row d-flex align-items-center mb-2';
+    div.dataset.index = i;
+    div.innerHTML = `
+        <input type="hidden" name="ing_id_${i}"     value="">
+        <input type="hidden" name="ing_delete_${i}" value="0" class="del-flag">
+        <input type="text"   name="ing_amount_${i}"
+               class="form-control form-control-sm mr-1"
+               style="width:90px; flex-shrink:0; background:#fff; color:#333;"
+               placeholder="200 g">
+        <input type="text"   name="ing_name_${i}"
+               class="form-control form-control-sm mr-1"
+               style="background:#fff; color:#333;"
+               placeholder="Ingredient">
+        <button type="button" class="btn btn-sm btn-danger flex-shrink-0"
+                onclick="deleteRow(this, 'ing')" title="Remove">
+            <i class="fas fa-times"></i>
+        </button>`;
+    list.appendChild(div);
+    setIngCount(i + 1);
+    div.querySelector('input[name^="ing_amount_"]').focus();
+}
+
+// ── Add instruction row ──────────────────────────────────────────────────────
+function addInstruction() {
+    const i = instCount();
+    const list = document.getElementById('inst-list');
+    const visibleCount = list.querySelectorAll('.inst-row:not([style*="display: none"])').length + 1;
+    const div = document.createElement('div');
+    div.className = 'inst-row d-flex align-items-start mb-3';
+    div.dataset.index = i;
+    div.innerHTML = `
+        <input type="hidden" name="inst_id_${i}"     value="">
+        <input type="hidden" name="inst_delete_${i}" value="0" class="del-flag">
+        <span class="badge badge-primary mr-2 mt-1 flex-shrink-0"
+              style="font-size:1rem; min-width:1.8rem; padding:.35rem .5rem;">
+            ${visibleCount}
+        </span>
+        <textarea name="inst_text_${i}"
+                  class="form-control mr-2" rows="2"
+                  placeholder="Describe this step..."></textarea>
+        <button type="button" class="btn btn-sm btn-danger flex-shrink-0 mt-1"
+                onclick="deleteRow(this, 'inst')" title="Remove step">
+            <i class="fas fa-times"></i>
+        </button>`;
+    list.appendChild(div);
+    setInstCount(i + 1);
+    div.querySelector('textarea').focus();
+}
+</script>
+
+{% endblock %}

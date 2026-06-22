@@ -19,6 +19,10 @@
     
     <!-- Bootstrap/Bootswatch -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/lux/bootstrap.min.css" integrity="sha384-9+PGKSqjRdkeAU7Eu4nkJU8RFaH8ace8HGXnkiKMP9I9Te0GJ4/km3L1Z8tXigpG" crossorigin="anonymous">
+    <!-- Bootstrap JS (required for modals, dropdowns, etc.) -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+            integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+            crossorigin="anonymous"></script>
 </head>
 
 <style>
@@ -74,7 +78,7 @@ function eventCheckBox() {
         <a class="nav-link" href="/recipes/accounts/login/" style="color: white; font-size: 18px;">Log In</a>
         {% endif %}
     </nav>
-    <main style="padding-top: 80px;">
+    <main style="padding-top: 90px;">
     {% block content %}
     {% endblock %}
     </main>

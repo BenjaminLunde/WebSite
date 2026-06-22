@@ -2,14 +2,31 @@
 
 {% block content %}
 
-    {% if info.is_draft and request.user.is_staff %}
-    <!-- Draft banner (superuser only) -->
-    <div class="alert alert-warning mb-0 text-center" style="border-radius:0;">
-        <strong>Draft recipe</strong> — only visible to staff.
-        <form method="post" action="/recipes/{{ info.id }}/publish/" class="d-inline ml-3">
+    {% if request.user.is_staff %}
+    <!-- Staff toolbar -->
+    <div class="alert mb-0 text-center {% if info.is_draft %}alert-warning{% else %}alert-secondary{% endif %}"
+         style="border-radius:0;">
+        {% if info.is_draft %}
+        <strong>Draft recipe</strong> — only visible to staff. &nbsp;
+        {% endif %}
+        <a href="/recipes/{{ info.id }}/edit/" class="btn btn-sm btn-primary mr-2">
+            <i class="fas fa-edit mr-1"></i>Edit recipe
+        </a>
+        {% if info.is_draft %}
+        <form method="post" action="/recipes/{{ info.id }}/publish/" class="d-inline">
             {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-success">Publish</button>
+            <button type="submit" class="btn btn-sm btn-success">
+                <i class="fas fa-globe mr-1"></i>Publish
+            </button>
         </form>
+        {% else %}
+        <form method="post" action="/recipes/{{ info.id }}/publish/" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-secondary btn-sm">
+                <i class="fas fa-eye-slash mr-1"></i>Unpublish
+            </button>
+        </form>
+        {% endif %}
     </div>
     {% endif %}
 

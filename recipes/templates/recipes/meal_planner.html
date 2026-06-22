@@ -3,53 +3,294 @@
 {% block content %}
 <div class="page-pad">
     <h1>Meal Planner</h1>
-    <p class="text-muted">Describe what you want and the AI will suggest recipes based on your pantry.</p>
-    <p class="text-muted"><em>Example: "4 dinners, 2 vegetarian and 1 with beef, plus a couple of snacks"</em></p>
+    <p class="lead text-muted">Describe what you want and the AI builds a complete meal plan — drawing from your recipes, curated dinners, and pantry.</p>
 
-    <form action="/recipes/meal-planner/" method="post" style="max-width: 700px;">
+    <!-- ── Tips (collapsible) ─────────────────────────────────────────────── -->
+    <div class="card mb-4" style="max-width:740px;">
+        <div class="card-header d-flex justify-content-between align-items-center"
+             style="cursor:pointer; background:#f8f9fa;"
+             data-toggle="collapse" data-target="#plannerTips" aria-expanded="false">
+            <span><i class="fas fa-lightbulb text-warning mr-2"></i><strong>Tips for a great meal plan</strong></span>
+            <small class="text-muted">click to expand</small>
+        </div>
+        <div id="plannerTips" class="collapse">
+            <div class="card-body">
+                <h6 class="font-weight-bold">Mention any of these in your request:</h6>
+                <ul class="mb-3">
+                    <li><strong>How many meals</strong> — e.g. <em>"5 dinners and 2 lunches"</em></li>
+                    <li><strong>Special occasions</strong> — e.g. <em>"one fancy dinner for Saturday"</em></li>
+                    <li><strong>Ingredients to use up</strong> — e.g. <em>"use the chicken in my pantry"</em></li>
+                    <li><strong>Cuisine preferences</strong> — e.g. <em>"mostly Italian and Asian"</em></li>
+                    <li><strong>Budget or effort</strong> — e.g. <em>"quick weeknight meals, nothing over 45 min"</em></li>
+                    <li><strong>Variety rules</strong> — e.g. <em>"no red meat two days in a row"</em></li>
+                </ul>
+
+                <h6 class="font-weight-bold">Example prompts:</h6>
+
+                <div class="bg-light rounded p-2 mb-2">
+                    <small class="text-muted d-block mb-1">Simple weekly plan:</small>
+                    <em>"5 dinners for the week, mix of meat and vegetarian, nothing too complicated."</em>
+                </div>
+                <div class="bg-light rounded p-2 mb-2">
+                    <small class="text-muted d-block mb-1">Pantry-first + special occasion:</small>
+                    <em>"Plan 4 dinners that use up what's in my pantry. Include one vegetarian and something special for Saturday."</em>
+                </div>
+                <div class="bg-light rounded p-2 mb-2">
+                    <small class="text-muted d-block mb-1">Full week with variety:</small>
+                    <em>"Full week: 5 dinners, 3 lunches, and 2 snacks. Prefer Asian and Mediterranean flavors. Don't repeat the same protein two days in a row."</em>
+                </div>
+                <div class="bg-light rounded p-2">
+                    <small class="text-muted d-block mb-1">Budget &amp; time-conscious:</small>
+                    <em>"4 quick dinners (under 30 min), budget ingredients, one must have fish. Use pantry items where possible."</em>
+                </div>
+
+                <p class="text-muted mt-3 mb-0" style="font-size:0.85rem;">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Use the <strong>Settings</strong> panel below to lock in dietary restrictions or a time limit — the AI will follow them strictly.
+                    Dietary restrictions set there <em>override</em> anything mentioned in the text.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Form ───────────────────────────────────────────────────────────── -->
+    <form action="/recipes/meal-planner/" method="post" style="max-width:740px;">
         {% csrf_token %}
-        <div class="form-group mt-4">
+
+        <!-- Settings panel -->
+        <div class="card mb-3" style="background:#f8f9fa;">
+            <div class="card-body py-3">
+                <h6 class="font-weight-bold mb-3">
+                    <i class="fas fa-sliders-h mr-2 text-secondary"></i>Settings
+                    <small class="text-muted font-weight-normal ml-1">(optional — but recommended)</small>
+                </h6>
+
+                <div class="form-row align-items-end mb-2">
+                    <div class="form-group col-auto mb-0 mr-3">
+                        <label class="small font-weight-bold mb-1 d-block">People</label>
+                        <input type="number" name="people" class="form-control form-control-sm"
+                               style="width:75px;" min="1" max="20"
+                               placeholder="e.g. 4" value="{{ settings_people }}">
+                    </div>
+                    <div class="form-group col-auto mb-0 mr-3">
+                        <label class="small font-weight-bold mb-1 d-block">Days to plan</label>
+                        <input type="number" name="days" class="form-control form-control-sm"
+                               style="width:75px;" min="1" max="14"
+                               placeholder="e.g. 7" value="{{ settings_days }}">
+                    </div>
+                    <div class="form-group col-auto mb-0">
+                        <label class="small font-weight-bold mb-1 d-block">Max cook time</label>
+                        <select name="max_time" class="form-control form-control-sm" style="width:130px;">
+                            <option value="" {% if not settings_max_time %}selected{% endif %}>No limit</option>
+                            <option value="20"  {% if settings_max_time == '20'  %}selected{% endif %}>≤ 20 min</option>
+                            <option value="30"  {% if settings_max_time == '30'  %}selected{% endif %}>≤ 30 min</option>
+                            <option value="45"  {% if settings_max_time == '45'  %}selected{% endif %}>≤ 45 min</option>
+                            <option value="60"  {% if settings_max_time == '60'  %}selected{% endif %}>≤ 60 min</option>
+                            <option value="90"  {% if settings_max_time == '90'  %}selected{% endif %}>≤ 90 min</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="small font-weight-bold mb-1 d-block">Dietary restrictions</label>
+                    {% for option in dietary_options %}
+                    <div class="form-check form-check-inline mb-1">
+                        <input class="form-check-input" type="checkbox" name="dietary"
+                               id="diet_{{ forloop.counter }}" value="{{ option }}"
+                               {% if option in settings_dietary %}checked{% endif %}>
+                        <label class="form-check-label small" for="diet_{{ forloop.counter }}">{{ option }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Request textarea -->
+        <div class="form-group mt-3">
+            <label class="font-weight-bold">Your request</label>
             <textarea name="user_request" class="form-control" rows="3"
-                      placeholder="Describe your meal plan for the week..."
+                      placeholder="e.g. 5 dinners for the week — use up pantry items, include one vegetarian and one fish dish, nothing too time-consuming."
                       required>{{ user_request }}</textarea>
         </div>
-        <button type="submit" class="btn btn-primary">Suggest recipes</button>
+        <button type="submit" class="btn btn-primary px-4">
+            <i class="fas fa-magic mr-1"></i> Build my meal plan
+        </button>
     </form>
 
+    <!-- ── Error ──────────────────────────────────────────────────────────── -->
     {% if error %}
-    <div class="alert alert-warning mt-4" style="max-width:700px;">
+    <div class="alert alert-warning mt-4" style="max-width:740px;">
+        <i class="fas fa-exclamation-triangle mr-1"></i>
         <strong>Note:</strong> {{ error }}
     </div>
     {% endif %}
 
+    <!-- ── Plan results ───────────────────────────────────────────────────── -->
+    {% if plan_items %}
+    <hr class="mt-5">
+
+    <!-- Heading + "Add all" button -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap mt-4 mb-1">
+        <h3 class="mb-2">Your meal plan</h3>
+        <form method="post" action="/recipes/meal-planner/add-to-shop/">
+            {% csrf_token %}
+            {% for item in plan_items %}
+                {% if item.type == 'recipe' %}
+                    <input type="hidden" name="recipe_ids" value="{{ item.recipe.id }}">
+                {% elif item.type == 'dinner' %}
+                    <input type="hidden" name="dinner_ids" value="{{ item.dinner.id }}">
+                {% endif %}
+            {% endfor %}
+            <button type="submit" class="btn btn-success mb-2">
+                <i class="fas fa-shopping-cart mr-1"></i>
+                Add all {{ plan_items|length }} meal{{ plan_items|length|pluralize }} to shopping list
+            </button>
+        </form>
+    </div>
+
+    <!-- AI reasoning -->
     {% if reasoning %}
-    <div class="alert alert-info mt-4" style="max-width:700px;">
-        <strong>AI reasoning:</strong> {{ reasoning }}
+    <div class="alert alert-info mb-4" style="max-width:100%;">
+        <i class="fas fa-robot mr-1"></i> <strong>AI reasoning:</strong> {{ reasoning }}
     </div>
     {% endif %}
 
-    {% if suggestions %}
-    <h3 class="mt-5">Suggested recipes</h3>
-    <div class="row mt-3">
-        {% for info in suggestions %}
+    <!-- Plan cards -->
+    <div class="row mt-2">
+        {% for item in plan_items %}
         <div class="col-lg-4 col-md-6 col-sm-6 col-12 mb-4">
-            <a href="/recipes/{{ info.id }}/" style="text-decoration:none; color:inherit;">
+
+            {% if item.type == 'recipe' %}
+            <!-- Recipe card -->
+            <a href="/recipes/{{ item.recipe.id }}/" style="text-decoration:none; color:inherit;">
                 <div class="card h-100 shadow-sm">
-                    {% if info.photo %}<img class="card-img-top" src="/media/{{ info.photo }}"
-                         style="height: 200px; object-fit: cover;" alt="{{ info.title }}">{% endif %}
+                    <div class="card-header py-2" style="background:#e8f0fe; border-bottom:1px solid #c5d5f5;">
+                        <small class="font-weight-bold blueText">
+                            <i class="fas fa-utensil-spoon mr-1" style="font-size:0.75em;"></i>
+                            {{ item.label }}
+                        </small>
+                    </div>
+                    {% if item.recipe.photo %}
+                    <img class="card-img-top" src="/media/{{ item.recipe.photo }}"
+                         style="height:160px; object-fit:cover;" alt="{{ item.recipe.title }}">
+                    {% endif %}
                     <div class="card-body">
-                        <h5 class="card-title blueText">{{ info.title }}</h5>
-                        <p class="card-text text-muted"><i class="fas fa-clock"></i> {{ info.time }}</p>
+                        <h5 class="card-title blueText mb-1">{{ item.recipe.title }}</h5>
+                        <p class="card-text text-muted mb-2" style="font-size:0.82rem;">
+                            <i class="fas fa-clock"></i> {{ item.recipe.time }}
+                            &nbsp;&middot;&nbsp;
+                            <i class="fas fa-users"></i> serves {{ item.recipe.servings }}
+                        </p>
+                        {% if item.note %}
+                        <p class="card-text mb-2" style="font-size:0.83rem; color:#555;">
+                            <i class="fas fa-comment-alt text-muted mr-1" style="font-size:0.75em;"></i>{{ item.note }}
+                        </p>
+                        {% endif %}
                         <div>
-                            {% for tag in info.recipe_tags.all %}
+                            {% for tag in item.recipe.recipe_tags.all %}
                             <span class="badge badge-secondary mr-1">{{ tag.name }}</span>
                             {% endfor %}
                         </div>
                     </div>
                 </div>
             </a>
+
+            {% elif item.type == 'dinner' %}
+            <!-- Dinner card -->
+            <a href="/recipes/dinners/{{ item.dinner.id }}/" style="text-decoration:none; color:inherit;">
+                <div class="card h-100 shadow-sm" style="border-color:#b8dacc;">
+                    <div class="card-header py-2" style="background:#d4edda; border-bottom:1px solid #b8dacc;">
+                        <small class="font-weight-bold" style="color:#155724;">
+                            <i class="fas fa-star mr-1" style="font-size:0.75em;"></i>
+                            {{ item.label }}
+                            <span class="badge badge-success ml-1" style="font-size:0.68em; vertical-align:middle;">Full Dinner</span>
+                        </small>
+                    </div>
+                    {% if item.dinner.photo %}
+                    <img class="card-img-top" src="/media/{{ item.dinner.photo }}"
+                         style="height:160px; object-fit:cover;" alt="{{ item.dinner.title }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title mb-1" style="color:#155724;">{{ item.dinner.title }}</h5>
+                        <p class="card-text text-muted mb-2" style="font-size:0.82rem;">
+                            <i class="fas fa-utensils"></i> {{ item.dinner.components.count }} course{{ item.dinner.components.count|pluralize }}
+                        </p>
+                        <div class="mb-2">
+                            {% for comp in item.dinner.components.all %}
+                            <div style="font-size:0.82rem; color:#444;">
+                                <span class="badge badge-light border mr-1">{{ comp.role }}</span>{{ comp.recipe.title }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if item.note %}
+                        <p class="card-text mt-1" style="font-size:0.83rem; color:#555;">
+                            <i class="fas fa-comment-alt text-muted mr-1" style="font-size:0.75em;"></i>{{ item.note }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% endif %}
+
         </div>
         {% endfor %}
+    </div>
+
+    <!-- Shopping notes -->
+    {% if shopping_notes %}
+    <div class="alert alert-secondary mt-1" style="max-width:100%;">
+        <i class="fas fa-shopping-basket mr-1"></i>
+        <strong>Shopping notes:</strong> {{ shopping_notes }}
+    </div>
+    {% endif %}
+
+    {% endif %}{# end plan_items #}
+
+    <!-- ── Suggested imports ──────────────────────────────────────────────── -->
+    {% if suggested_imports %}
+    <div class="mt-4" style="max-width:740px;">
+        {% if user.is_staff %}
+        <h5 class="mb-1"><i class="fas fa-cloud-download-alt mr-1"></i> Suggested recipes to import</h5>
+        <p class="text-muted small mb-3">
+            The AI couldn't find these in your recipe library. Import them from trusted sites to fill the gaps in the plan.
+        </p>
+        {% for imp in suggested_imports %}
+        <div class="card mb-2">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-start flex-wrap">
+                    <div>
+                        <strong>{{ imp.label }}</strong>
+                        {% if imp.reason %}
+                        <small class="text-muted ml-2">— {{ imp.reason }}</small>
+                        {% endif %}
+                        <br>
+                        <small class="text-muted">
+                            Search: <em>{{ imp.search_query }}</em>
+                        </small>
+                    </div>
+                    <form method="post" action="/recipes/import/" class="mt-1 mt-sm-0 ml-sm-3">
+                        {% csrf_token %}
+                        <input type="hidden" name="search_query" value="{{ imp.search_query }}">
+                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-download mr-1"></i> Search &amp; Import
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <!-- Non-staff: just inform that some meals couldn't be matched -->
+        <div class="alert alert-light border">
+            <i class="fas fa-info-circle mr-1 text-muted"></i>
+            <strong>{{ suggested_imports|length }} meal{{ suggested_imports|length|pluralize }}</strong>
+            couldn't be matched from the recipe library:
+            {% for imp in suggested_imports %}
+                <em>{{ imp.label }}</em>{% if not forloop.last %}, {% endif %}
+            {% endfor %}.
+            Ask the site admin to add more recipes for these.
+        </div>
+        {% endif %}
     </div>
     {% endif %}
 

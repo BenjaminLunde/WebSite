@@ -22,6 +22,7 @@ urlpatterns = [
     path('pantry/delete_selected/', views.delete_selected_pantry, name='delete_selected_pantry'),
     path('remove_used/', views.remove_used_ingredients, name='remove_used'),
     path('meal-planner/', views.meal_planner, name='meal_planner'),
+    path('meal-planner/add-to-shop/', views.add_plan_to_shop, name='add_plan_to_shop'),
     path('<int:info_id>/combined/', views.combined_dinner, name='combined_dinner'),
     path('add_combined_to_shop/', views.add_combined_to_shop, name='add_combined_to_shop'),
     path('dinners/<int:dinner_id>/', views.dinner_detail, name='dinner_detail'),

@@ -395,17 +395,39 @@ def meal_planner(request):
     if not request.user.is_authenticated:
         return HttpResponseRedirect('/recipes/')
 
-    suggestions = []
+    plan_items = []        # enriched list of plan entries (recipe/dinner objects attached)
+    suggested_imports = [] # AI suggestions for recipes to import
     reasoning = ''
+    shopping_notes = ''
     user_request = ''
     error = ''
 
+    # Settings — preserved across form submission
+    settings_people = ''
+    settings_days = ''
+    settings_dietary = []
+    settings_max_time = ''
+
+    dietary_options = [
+        'Vegetarian', 'Vegan', 'Gluten-free', 'Dairy-free',
+        'No pork', 'No shellfish', 'No nuts',
+    ]
+
     if request.method == 'POST':
         user_request = request.POST.get('user_request', '').strip()
+        settings_people = request.POST.get('people', '').strip()
+        settings_days = request.POST.get('days', '').strip()
+        settings_dietary = request.POST.getlist('dietary')
+        settings_max_time = request.POST.get('max_time', '').strip()
+
         if user_request:
             from .ai_planner import suggest_meals
-            recipes = Info.objects.prefetch_related(
+
+            recipes = Info.objects.filter(is_draft=False).prefetch_related(
                 'recipe_tags', 'ingredient_set__ingredient_type'
+            )
+            dinners = Dinner.objects.prefetch_related(
+                'components__recipe__recipe_tags'
             ).all()
             pantry_items = list(
                 PantryItem.objects.filter(user=request.user)
@@ -413,19 +435,94 @@ def meal_planner(request):
                 .order_by('added_date')
             )
 
-            ids, reasoning, error = suggest_meals(user_request, recipes, pantry_items)
-            if ids:
-                id_order = {sid: idx for idx, sid in enumerate(ids)}
-                suggestions = list(Info.objects.filter(id__in=ids))
-                suggestions.sort(key=lambda r: id_order.get(r.id, 999))
+            settings = {
+                'people': settings_people,
+                'days': settings_days,
+                'dietary': settings_dietary,
+                'max_time': settings_max_time,
+            }
+
+            plan_data, reasoning, error = suggest_meals(
+                user_request, recipes, pantry_items,
+                dinners=dinners, settings=settings,
+            )
+
+            if plan_data:
+                shopping_notes = plan_data.get('shopping_notes', '')
+                suggested_imports = plan_data.get('suggested_imports', [])
+
+                item_list = plan_data.get('items', [])
+                recipe_ids = [x['id'] for x in item_list if x.get('type') == 'recipe']
+                dinner_ids = [x['id'] for x in item_list if x.get('type') == 'dinner']
+
+                recipe_map = {
+                    r.id: r
+                    for r in Info.objects.filter(id__in=recipe_ids)
+                    .prefetch_related('recipe_tags')
+                } if recipe_ids else {}
+
+                dinner_map = {
+                    d.id: d
+                    for d in Dinner.objects.filter(id__in=dinner_ids)
+                    .prefetch_related('components__recipe__recipe_tags')
+                } if dinner_ids else {}
+
+                for item in item_list:
+                    itype = item.get('type')
+                    iid = item.get('id')
+                    enriched = dict(item)
+                    if itype == 'recipe' and iid in recipe_map:
+                        enriched['recipe'] = recipe_map[iid]
+                        plan_items.append(enriched)
+                    elif itype == 'dinner' and iid in dinner_map:
+                        enriched['dinner'] = dinner_map[iid]
+                        plan_items.append(enriched)
 
     context = {
-        'suggestions': suggestions,
+        'plan_items': plan_items,
+        'suggested_imports': suggested_imports,
         'reasoning': reasoning,
+        'shopping_notes': shopping_notes,
         'user_request': user_request,
         'error': error,
+        'dietary_options': dietary_options,
+        'settings_people': settings_people,
+        'settings_days': settings_days,
+        'settings_dietary': settings_dietary,
+        'settings_max_time': settings_max_time,
     }
     return render(request, 'recipes/meal_planner.html', context)
+
+
+def add_plan_to_shop(request):
+    """Add all recipes and dinners from a meal plan to the shopping list."""
+    if not request.user.is_authenticated or request.method != 'POST':
+        return HttpResponseRedirect('/recipes/shopping/')
+
+    # Individual recipes
+    for recipe_id in request.POST.getlist('recipe_ids'):
+        recipe = Info.objects.filter(pk=recipe_id).first()
+        if recipe:
+            for ingredient in recipe.ingredient_set.select_related('ingredient_type').all():
+                if ingredient.ingredient_type:
+                    _add_to_shop_list(
+                        request.user, ingredient.ingredient_type, ingredient.measurment
+                    )
+
+    # Full dinners — add every component's ingredients
+    for dinner_id in request.POST.getlist('dinner_ids'):
+        dinner_obj = Dinner.objects.filter(pk=dinner_id).first()
+        if dinner_obj:
+            for comp in dinner_obj.components.select_related('recipe').all():
+                for ingredient in comp.recipe.ingredient_set.select_related(
+                    'ingredient_type'
+                ).all():
+                    if ingredient.ingredient_type:
+                        _add_to_shop_list(
+                            request.user, ingredient.ingredient_type, ingredient.measurment
+                        )
+
+    return HttpResponseRedirect('/recipes/shopping/')
 
 
 def dinner_detail(request, dinner_id):

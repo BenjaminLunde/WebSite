@@ -123,11 +123,13 @@
                                class="custom-control-input"
                                id="customCheck{{ forloop.counter }}"
                                style="width: 20px; height: 20px;"
-                               {% if not itype or itype.id not in pantry_type_ids and not itype.is_staple %}checked{% endif %}>
+                               {% if not itype or itype.id not in pantry_type_ids and not itype.is_always_available %}checked{% endif %}>
                         <label class="custom-control-label" for="customCheck{{ forloop.counter }}">
                             {{ ingredient.measurment }} {{ ingredient.name }}
                             {% if itype and itype.id in pantry_type_ids %}
                             <span class="badge badge-success ml-1" style="font-size:10px;">In pantry</span>
+                            {% elif itype and itype.is_always_available %}
+                            <span class="badge" style="font-size:10px; background:rgba(255,255,255,0.25); color:white;">Always available</span>
                             {% elif itype and itype.is_staple %}
                             <span class="badge" style="font-size:10px; background:rgba(255,255,255,0.25); color:white;">Staple</span>
                             {% endif %}

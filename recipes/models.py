@@ -90,7 +90,11 @@ class IngredientType(models.Model):
     )
     is_staple = models.BooleanField(
         default=False,
-        help_text="Always available (water, salt, etc.) — unchecked by default on all recipe pages"
+        help_text="Pantry staple (salt, oil, spices, etc.) — track in pantry and buy if needed, but no urgency to use up"
+    )
+    is_always_available = models.BooleanField(
+        default=False,
+        help_text="Always available without buying (water, etc.) — never shown on shopping list or in pantry"
     )
 
     class Meta:

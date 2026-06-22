@@ -36,8 +36,10 @@ def _pantry_context(pantry_items):
     if not pantry_items:
         return 'Pantry is empty'
 
-    staples = [p for p in pantry_items if p.ingredient_type and p.ingredient_type.is_staple]
-    perishables = [p for p in pantry_items if not (p.ingredient_type and p.ingredient_type.is_staple)]
+    # Exclude "always available" items (water etc.) — they're never in the pantry
+    relevant = [p for p in pantry_items if not (p.ingredient_type and p.ingredient_type.is_always_available)]
+    staples = [p for p in relevant if p.ingredient_type and p.ingredient_type.is_staple]
+    perishables = [p for p in relevant if not (p.ingredient_type and p.ingredient_type.is_staple)]
 
     lines = []
     if perishables:

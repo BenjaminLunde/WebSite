@@ -28,8 +28,8 @@ class InfoAdmin(admin.ModelAdmin):
 
 @admin.register(IngredientType)
 class IngredientTypeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'tagg', 'shelf_life_days', 'is_staple')
-    list_filter = ('tagg', 'is_staple')
+    list_display = ('name', 'tagg', 'shelf_life_days', 'is_staple', 'is_always_available')
+    list_filter = ('tagg', 'is_staple', 'is_always_available')
     search_fields = ('name',)
     ordering = ('name',)
 

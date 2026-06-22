@@ -526,7 +526,7 @@ def add_plan_to_shop(request):
         if recipe:
             for ingredient in recipe.ingredient_set.select_related('ingredient_type').all():
                 itype = ingredient.ingredient_type
-                if itype and not itype.is_staple:
+                if itype and not itype.is_always_available:
                     _add_to_shop_list(request.user, itype, ingredient.measurment)
 
     # Full dinners — add every component's ingredients
@@ -538,7 +538,7 @@ def add_plan_to_shop(request):
                     'ingredient_type'
                 ).all():
                     itype = ingredient.ingredient_type
-                    if itype and not itype.is_staple:
+                    if itype and not itype.is_always_available:
                         _add_to_shop_list(request.user, itype, ingredient.measurment)
 
     return HttpResponseRedirect('/recipes/shopping/')

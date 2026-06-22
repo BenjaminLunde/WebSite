@@ -18,7 +18,13 @@
     <div class="col-lg-4 col-md-6 col-12 mb-2">
         <a href="/recipes/{{ info.id }}/">
             <div class="p-3 p-md-4">
-                {% if info.photo %}<img class="img-fluid list_image mb-2" src="{{MEDIA_URL}}{{ info.photo }}">{% endif %}
+                {% if info.photo %}
+                <img class="img-fluid list_image mb-2" src="{{MEDIA_URL}}{{ info.photo }}">
+                {% else %}
+                <div class="list_image mb-2 d-flex align-items-center justify-content-center" style="background:#f0f0f0; border-radius:4px;">
+                    <i class="fas fa-utensils" style="font-size:3rem; color:#ccc;"></i>
+                </div>
+                {% endif %}
                 <ul class="list-inline">
                     <li class="list-inline-item"><h6>recipes</h6></li>
                     <li class="list-inline-item">→</li>

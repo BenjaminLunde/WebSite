@@ -76,47 +76,48 @@
 
                         {% for item in items %}
                         <div id="item-row-{{ item.id }}"
-                             class="d-flex align-items-center mb-2"
+                             class="mb-3"
                              data-tagg="{{ tagg.id }}">
 
-                            <input type="checkbox"
-                                   class="shop-checkbox"
-                                   value="{{ item.id }}"
-                                   style="width:22px;height:22px;flex-shrink:0;cursor:pointer;">
+                            <!-- Row 1: checkbox + name -->
+                            <div class="d-flex align-items-center mb-1">
+                                <input type="checkbox"
+                                       class="shop-checkbox"
+                                       value="{{ item.id }}"
+                                       style="width:22px;height:22px;flex-shrink:0;cursor:pointer;">
+                                <span class="ml-2"
+                                      style="font-size:15px;font-weight:500;"
+                                      title="{{ item.name }}">
+                                    {{ item.name }}
+                                </span>
+                            </div>
 
-                            <span class="ml-2 flex-fill"
-                                  style="font-size:14px;min-width:0;overflow:hidden;
-                                         text-overflow:ellipsis;white-space:nowrap;"
-                                  title="{{ item.name }}">
-                                {{ item.name }}
-                            </span>
+                            <!-- Row 2: qty · unit · delete (indented to align with name) -->
+                            <div class="d-flex align-items-center" style="padding-left:30px;">
+                                <input type="number"
+                                       id="qty-{{ item.id }}"
+                                       class="shop-qty form-control form-control-sm"
+                                       value="{{ item.qty_display }}"
+                                       data-id="{{ item.id }}"
+                                       min="0.01" step="any"
+                                       style="width:85px;background:#fff;color:#333;">
+                                <select id="unit-{{ item.id }}"
+                                        class="shop-unit form-control form-control-sm ml-1"
+                                        data-id="{{ item.id }}"
+                                        style="width:70px;background:#fff;color:#333;">
+                                    {% for u in units %}
+                                    <option value="{{ u }}"
+                                        {% if u == item.unit_display %}selected{% endif %}>{{ u }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-light ml-1"
+                                        onclick="deleteItem({{ item.id }}, {{ tagg.id }})"
+                                        title="Remove">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
 
-                            <!-- Qty — auto-saves on change (debounced) -->
-                            <input type="number"
-                                   id="qty-{{ item.id }}"
-                                   class="shop-qty form-control form-control-sm ml-1"
-                                   value="{{ item.qty_display }}"
-                                   data-id="{{ item.id }}"
-                                   min="0.01" step="any"
-                                   style="width:58px;background:#fff;color:#333;">
-
-                            <!-- Unit — auto-saves immediately on change -->
-                            <select id="unit-{{ item.id }}"
-                                    class="shop-unit form-control form-control-sm ml-1"
-                                    data-id="{{ item.id }}"
-                                    style="width:56px;background:#fff;color:#333;">
-                                {% for u in units %}
-                                <option value="{{ u }}"
-                                    {% if u == item.unit_display %}selected{% endif %}>{{ u }}</option>
-                                {% endfor %}
-                            </select>
-
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-light ml-1"
-                                    onclick="deleteItem({{ item.id }}, {{ tagg.id }})"
-                                    title="Remove">
-                                <i class="fa fa-trash"></i>
-                            </button>
                         </div>
                         {% endfor %}
 

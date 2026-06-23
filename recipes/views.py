@@ -122,17 +122,18 @@ def shopping(request):
             if tagg:
                 items_by_tagg[tagg.id].append(item)
 
-        # Attach parsed qty / unit so the template can pre-fill the editable inputs
+        # Attach parsed qty / unit so the template can pre-fill the editable inputs.
+        # Note: Django templates block attributes starting with '_', so use plain names.
         for items_list in items_by_tagg.values():
             for item in items_list:
                 qty, unit = parse_amount(item.amount)
                 if qty is not None:
                     n = qty.normalize()
-                    item._qty = str(int(n)) if n == n.to_integral_value() else str(n)
-                    item._unit = unit
+                    item.qty_display = str(int(n)) if n == n.to_integral_value() else str(n)
+                    item.unit_display = unit
                 else:
-                    item._qty = ''
-                    item._unit = UNITS[0]
+                    item.qty_display = ''
+                    item.unit_display = UNITS[0]
 
         tagg_with_items = [
             (tagg, items_by_tagg[tagg.id])

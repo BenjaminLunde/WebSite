@@ -95,7 +95,7 @@
                             <input type="number"
                                    id="qty-{{ item.id }}"
                                    class="shop-qty form-control form-control-sm ml-1"
-                                   value="{{ item._qty }}"
+                                   value="{{ item.qty_display }}"
                                    data-id="{{ item.id }}"
                                    min="0.01" step="any"
                                    style="width:58px;background:#fff;color:#333;">
@@ -107,7 +107,7 @@
                                     style="width:56px;background:#fff;color:#333;">
                                 {% for u in units %}
                                 <option value="{{ u }}"
-                                    {% if u == item._unit %}selected{% endif %}>{{ u }}</option>
+                                    {% if u == item.unit_display %}selected{% endif %}>{{ u }}</option>
                                 {% endfor %}
                             </select>
 

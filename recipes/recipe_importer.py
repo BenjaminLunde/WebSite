@@ -88,6 +88,21 @@ def get_links_from_page(url, base_url):
 # Claude parsing
 # ---------------------------------------------------------------------------
 
+_UNIT_RULES = """\
+Amount rules — the amount field MUST always be "<number> <unit>", never free text:
+- Allowed units: g, kg, ml, dl, l, ts (teaspoon), ss (tablespoon), stk (piece/item).
+- Use metric: prefer g/dl/l over ounces/cups/fahrenheit.
+- 1 cup → 2.5 dl  |  1 oz → 28 g  |  1 fl oz → 30 ml  |  1 lb → 450 g
+- "a pinch" / "en klype" / "litt" → "1 ts"
+- "a handful" / "en håndfull" / "en neve" → "1 dl"
+- "to taste" / "etter smak" / "as needed" → "1 ts"
+- "a clove" / "et fedd" (garlic) → "1 stk"  (ingredient name: Hvitløk)
+- "a can" / "en boks" → convert to g or ml using the stated can size, or "1 stk" if unknown
+- "some" / "noen" / "a few" / "et par" → your best numeric estimate (e.g. "3 stk", "2 ts")
+- Fractions are fine: "0.5 ts", "1.5 dl"
+- Never output amounts like "to taste", "a handful", or any other free text.
+"""
+
 _PARSE_PROMPT = """\
 Extract the recipe from the text below and return ONLY valid JSON \
 (no markdown, no extra text) in exactly this format:
@@ -110,11 +125,9 @@ Extract the recipe from the text below and return ONLY valid JSON \
 
 Rules:
 - difficulty is 1 (very easy) to 5 (very hard).
-- Use metric measurements (g, kg, dl, l, ts=teaspoon, ss=tablespoon) where possible.
-- "stk" means pieces/items (e.g. "2 stk" for 2 eggs).
 - Keep the instructions clear and concise — one action per step.
 - If a field is unknown, use a sensible default (servings=4, difficulty=2, time="unknown").
-
+""" + _UNIT_RULES + """
 Text:
 """
 
@@ -181,11 +194,9 @@ then return ONLY valid JSON (no markdown, no extra text) in exactly this format:
 
 Rules:
 - difficulty is 1 (very easy) to 5 (very hard).
-- Use metric measurements (g, kg, dl, l, ts=teaspoon, ss=tablespoon) where possible.
-- "stk" means pieces/items (e.g. "2 stk" for 2 eggs).
 - Keep instructions clear and concise — one action per step.
 - Make the recipe practical and realistic for a home cook.
-
+""" + _UNIT_RULES + """
 Dish:
 """
 

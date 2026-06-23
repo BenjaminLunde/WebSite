@@ -64,19 +64,44 @@ _DISPLAY_FAMILY = {
 
 # Aliases accepted in parse_amount (tolerates old free-text / typing variants)
 _ALIASES = {
+    # ── Weight ──────────────────────────────────────────────────────────────
     'gram': 'g', 'grams': 'g',
     'kilogram': 'kg', 'kilograms': 'kg',
+
+    # ── Volume ───────────────────────────────────────────────────────────────
     'milliliter': 'ml', 'milliliters': 'ml', 'millilitre': 'ml', 'millilitres': 'ml',
     'deciliter': 'dl', 'deciliters': 'dl', 'decilitre': 'dl',
     'liter': 'l', 'liters': 'l', 'litre': 'l', 'litres': 'l',
+
+    # ── Spoons ───────────────────────────────────────────────────────────────
     'teskje': 'ts', 'teskjeer': 'ts', 'teaspoon': 'ts', 'teaspoons': 'ts', 'tsp': 'ts',
+    'ts.': 'ts',
     'spiseskje': 'ss', 'spiseskjeer': 'ss', 'tablespoon': 'ss', 'tablespoons': 'ss',
     'tbs': 'ss', 'tbsp': 'ss',
+    'ss.': 'ss',
+
+    # ── Count / pieces ───────────────────────────────────────────────────────
     'pcs': 'stk', 'pc': 'stk', 'piece': 'stk', 'pieces': 'stk',
-    'stykk': 'stk', 'stykker': 'stk',
+    'stykk': 'stk', 'stykker': 'stk', 'stykke': 'stk',
+    'stk.': 'stk',
+    'fedd': 'stk',    # garlic clove — "2 fedd hvitløk" → 2 stk
+
+    # ── Fuzzy quantities → nearest standard unit ─────────────────────────────
+    # Pinch: ≈ 1 ts  (the AI is told to write 1 ts, but just in case)
+    'klype': 'ts', 'klyp': 'ts', 'klypet': 'ts', 'pinch': 'ts',
+    # Handful: ≈ 1 dl
+    'neve': 'dl', 'nevefull': 'dl', 'handful': 'dl',
+    # "handfull" / "haandfull" — ASCII fallbacks the AI might write
+    'handfull': 'dl', 'haandfull': 'dl',
+    # Norwegian with special char (now supported by the updated _PARSE_RE)
+    'håndfull': 'dl',
 }
 
-_PARSE_RE = re.compile(r'^\s*(\d+(?:[.,]\d+)?(?:/\d+)?)\s*([a-zA-Z]*)\s*$')
+# Support Norwegian characters (æ ø å) in unit strings so aliases like
+# "håndfull" can be recognised if they slip through the AI prompt.
+_PARSE_RE = re.compile(
+    r'^\s*(\d+(?:[.,]\d+)?(?:/\d+)?)\s*([a-zA-ZæøåÆØÅ]*)\s*$'
+)
 
 
 # ---------------------------------------------------------------------------

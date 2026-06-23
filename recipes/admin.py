@@ -1,6 +1,8 @@
 import os
 import json
 from django.contrib import admin
+from django.urls import path
+from django.shortcuts import redirect
 from recipes.models import (
     Ingredient, Instruction, Tagg, RecipeTag, PantryItem,
     IngredientType, Dinner, DinnerComponent, RecipeSource,
@@ -9,6 +11,186 @@ from recipes.models import (
 from django.contrib.auth.models import User
 
 from .models import Info
+
+
+# ---------------------------------------------------------------------------
+# Seed data — common Norwegian ingredient types
+# (name, tagg_name, shelf_life_days, is_staple, is_always_available)
+# ---------------------------------------------------------------------------
+_SEED_DATA = [
+    # ── Frukt og Grønt ──────────────────────────────────────────────────────
+    ('Eple',              'Frukt og Grønt', 14,   False, False),
+    ('Pære',              'Frukt og Grønt', 10,   False, False),
+    ('Banan',             'Frukt og Grønt',  7,   False, False),
+    ('Appelsin',          'Frukt og Grønt', 14,   False, False),
+    ('Sitron',            'Frukt og Grønt', 21,   False, False),
+    ('Lime',              'Frukt og Grønt', 14,   False, False),
+    ('Mango',             'Frukt og Grønt',  5,   False, False),
+    ('Ananas',            'Frukt og Grønt',  5,   False, False),
+    ('Jordbær',           'Frukt og Grønt',  4,   False, False),
+    ('Bringebær',         'Frukt og Grønt',  4,   False, False),
+    ('Blåbær',            'Frukt og Grønt',  7,   False, False),
+    ('Druer',             'Frukt og Grønt',  7,   False, False),
+    ('Avokado',           'Frukt og Grønt',  4,   False, False),
+    ('Nektarin',          'Frukt og Grønt',  5,   False, False),
+    ('Fersken',           'Frukt og Grønt',  5,   False, False),
+    ('Selleri',           'Frukt og Grønt', 14,   False, False),
+    ('Purre',             'Frukt og Grønt', 10,   False, False),
+    ('Spinat',            'Frukt og Grønt',  5,   False, False),
+    ('Isbergsalat',       'Frukt og Grønt',  7,   False, False),
+    ('Rucola',            'Frukt og Grønt',  5,   False, False),
+    ('Sjalottløk',        'Frukt og Grønt', 30,   False, False),
+    ('Sjampinjong',       'Frukt og Grønt',  7,   False, False),
+    ('Sopp',              'Frukt og Grønt',  5,   False, False),
+    ('Aubergine',         'Frukt og Grønt', 10,   False, False),
+    ('Zucchini',          'Frukt og Grønt',  7,   False, False),
+    ('Squash',            'Frukt og Grønt',  7,   False, False),
+    ('Rosenkål',          'Frukt og Grønt', 10,   False, False),
+    ('Kålrabi',           'Frukt og Grønt', 14,   False, False),
+    ('Pastinakk',         'Frukt og Grønt', 14,   False, False),
+    ('Cherrytomater',     'Frukt og Grønt',  7,   False, False),
+    ('Mais',              'Frukt og Grønt',  3,   False, False),
+    ('Persille',          'Frukt og Grønt',  7,   False, False),
+    ('Basilikum',         'Frukt og Grønt',  7,   False, False),
+    ('Dill',              'Frukt og Grønt',  7,   False, False),
+    ('Timian',            'Frukt og Grønt',  7,   False, False),
+    ('Rosmarin',          'Frukt og Grønt', 10,   False, False),
+
+    # ── Kjøtt og Fisk ───────────────────────────────────────────────────────
+    ('Kyllingfilet',      'Kjøtt og Fisk',   3,   False, False),
+    ('Kyllingbryst',      'Kjøtt og Fisk',   3,   False, False),
+    ('Kyllinglår',        'Kjøtt og Fisk',   3,   False, False),
+    ('Kjøttdeig',         'Kjøtt og Fisk',   3,   False, False),
+    ('Lammekjøtt',        'Kjøtt og Fisk',   3,   False, False),
+    ('Svinekoteletter',   'Kjøtt og Fisk',   3,   False, False),
+    ('Svinefilet',        'Kjøtt og Fisk',   3,   False, False),
+    ('Bacon',             'Kjøtt og Fisk',   7,   False, False),
+    ('Pølser',            'Kjøtt og Fisk',   5,   False, False),
+    ('Kokt skinke',       'Kjøtt og Fisk',   5,   False, False),
+    ('Spekeskinke',       'Kjøtt og Fisk',  14,   False, False),
+    ('Laks',              'Kjøtt og Fisk',   2,   False, False),
+    ('Laksefilet',        'Kjøtt og Fisk',   2,   False, False),
+    ('Torsk',             'Kjøtt og Fisk',   2,   False, False),
+    ('Sei',               'Kjøtt og Fisk',   2,   False, False),
+    ('Reker',             'Kjøtt og Fisk',   2,   False, False),
+    ('Blåskjell',         'Kjøtt og Fisk',   1,   False, False),
+    ('Tunfisk',           'Kjøtt og Fisk',  None, True,  False),
+    ('Makrell',           'Kjøtt og Fisk',  None, True,  False),
+
+    # ── Egg og Meieriprodukter ──────────────────────────────────────────────
+    ('Egg',               'Egg og Meieriprodukter', 21,   False, False),
+    ('Rømme',             'Egg og Meieriprodukter', 14,   False, False),
+    ('Kremfløte',         'Egg og Meieriprodukter', 10,   False, False),
+    ('Matfløte',          'Egg og Meieriprodukter', 10,   False, False),
+    ('Yoghurt',           'Egg og Meieriprodukter', 14,   False, False),
+    ('Gresk yoghurt',     'Egg og Meieriprodukter', 14,   False, False),
+    ('Cheddar',           'Egg og Meieriprodukter', 30,   False, False),
+    ('Mozzarella',        'Egg og Meieriprodukter', 14,   False, False),
+    ('Parmesan',          'Egg og Meieriprodukter', 45,   False, False),
+    ('Crème fraîche',     'Egg og Meieriprodukter', 14,   False, False),
+    ('Cottage cheese',    'Egg og Meieriprodukter',  7,   False, False),
+    ('Hvitost',           'Egg og Meieriprodukter', 30,   False, False),
+    ('Brunost',           'Egg og Meieriprodukter', 60,   False, False),
+    ('Fetaost',           'Egg og Meieriprodukter', 30,   False, False),
+    ('Mascarpone',        'Egg og Meieriprodukter', 14,   False, False),
+    ('Kesam',             'Egg og Meieriprodukter', 10,   False, False),
+    ('Brie',              'Egg og Meieriprodukter', 14,   False, False),
+
+    # ── Hermetikk og Tørrvarrer ─────────────────────────────────────────────
+    ('Ris',               'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Basmatiris',        'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Jasminris',         'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Risottoris',        'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Penne',             'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Fusilli',           'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Lasagneplater',     'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Makaroni',          'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Tagliatelle',       'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Linser',            'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Røde linser',       'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Svarte bønner',     'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Kidneybønner',      'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Hermetiske tomater','Hermetikk og Tørrvarrer', None, True,  False),
+    ('Tomatpuré',         'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Hermetisk mais',    'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Ketchup',           'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Majones',           'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Sennep',            'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Dijon-sennep',      'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Olivenolje',        'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Solsikkeolje',      'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Rapsolje',          'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Hvetemel',          'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Havregryn',         'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Melis',             'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Bakepulver',        'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Natron',            'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Tørrgjær',          'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Vaniljesukker',     'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Kakao',             'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Flakesalt',         'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Mandler',           'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Valnøtter',         'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Cashewnøtter',      'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Rosiner',           'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Peanøttsmør',       'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Tahini',            'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Kokoskrem',         'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Buljongterning',    'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Grønnsakskraft',    'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Worcestershiresaus','Hermetikk og Tørrvarrer', None, True,  False),
+    ('Fiskesaus',         'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Sriracha',          'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Balsamicoeddik',    'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Rødvinseddik',      'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Knekkebrød',        'Hermetikk og Tørrvarrer', None, True,  False),
+    ('Tortillalefser',    'Hermetikk og Tørrvarrer',  7,   False, False),
+    ('Loff',              'Hermetikk og Tørrvarrer',  3,   False, False),
+    ('Soyamelk',          'Hermetikk og Tørrvarrer',  7,   False, False),
+
+    # ── Krydder (all staples, no shelf life) ────────────────────────────────
+    ('Kanel',             'Krydder', None, True, False),
+    ('Gurkemeie',         'Krydder', None, True, False),
+    ('Paprikapulver',     'Krydder', None, True, False),
+    ('Røkt paprikapulver','Krydder', None, True, False),
+    ('Cayennepepper',     'Krydder', None, True, False),
+    ('Hvit pepper',       'Krydder', None, True, False),
+    ('Chiliflak',         'Krydder', None, True, False),
+    ('Løkpulver',         'Krydder', None, True, False),
+    ('Hvitløkspulver',    'Krydder', None, True, False),
+    ('Ingefærpulver',     'Krydder', None, True, False),
+    ('Tørket timian',     'Krydder', None, True, False),
+    ('Tørket rosmarin',   'Krydder', None, True, False),
+    ('Tørket basilikum',  'Krydder', None, True, False),
+    ('Tørket dill',       'Krydder', None, True, False),
+    ('Laurbærblad',       'Krydder', None, True, False),
+    ('Nellik',            'Krydder', None, True, False),
+    ('Stjerneanis',       'Krydder', None, True, False),
+    ('Kardemomme',        'Krydder', None, True, False),
+    ('Allehånde',         'Krydder', None, True, False),
+    ('Safran',            'Krydder', None, True, False),
+    ('Sitronpepper',      'Krydder', None, True, False),
+    ('Merian',            'Krydder', None, True, False),
+
+    # ── Frysevarer ──────────────────────────────────────────────────────────
+    ('Frosne grønnsaker', 'Frysevarer', 365, False, False),
+    ('Frossen spinat',    'Frysevarer', 365, False, False),
+    ('Frosne bringebær',  'Frysevarer', 365, False, False),
+    ('Frosne blåbær',     'Frysevarer', 365, False, False),
+    ('Frosne mango',      'Frysevarer', 365, False, False),
+    ('Frosne mais',       'Frysevarer', 365, False, False),
+    ('Frossen laks',      'Frysevarer',  90, False, False),
+    ('Frosset kylling',   'Frysevarer',  90, False, False),
+    ('Frosne reker',      'Frysevarer',  90, False, False),
+
+    # ── Snacks og Gotteri ───────────────────────────────────────────────────
+    ('Melkesjokolade',    'Snacks og Gotteri', None, True, False),
+    ('Hvit sjokolade',    'Snacks og Gotteri', None, True, False),
+    ('Nøttemiks',         'Snacks og Gotteri', None, True, False),
+    ('Tørkede aprikoser', 'Snacks og Gotteri', None, True, False),
+    ('Dadler',            'Snacks og Gotteri', None, True, False),
+    ('Syltetøy',          'Snacks og Gotteri', None, True, False),
+]
 
 
 @admin.action(description='Merge selected into oldest entry (others deleted)')
@@ -310,6 +492,7 @@ class IngredientTypeAdmin(admin.ModelAdmin):
     list_filter = ('tagg', 'is_staple', 'is_always_available')
     search_fields = ('name',)
     ordering = ('name',)
+    change_list_template = 'admin/recipes/ingredienttype/change_list.html'
     actions = [
         capitalize_ingredient_names,
         ai_translate_to_norwegian,
@@ -317,6 +500,48 @@ class IngredientTypeAdmin(admin.ModelAdmin):
         ai_enrich_ingredient_types,
         merge_ingredient_types,
     ]
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                'seed/',
+                self.admin_site.admin_view(self.seed_view),
+                name='recipes_ingredienttype_seed',
+            ),
+        ]
+        return custom + urls
+
+    def seed_view(self, request):
+        """POST handler for the 🌱 Seed button in the changelist toolbar."""
+        if request.method != 'POST':
+            return redirect('..')
+
+        tag_cache = {t.name: t for t in Tagg.objects.all()}
+        created = 0
+        skipped = 0
+
+        for name, tagg_name, shelf_life, is_staple, is_always_avail in _SEED_DATA:
+            tagg = tag_cache.get(tagg_name)
+            _, was_created = IngredientType.objects.get_or_create(
+                name=name,
+                defaults={
+                    'tagg': tagg,
+                    'shelf_life_days': shelf_life,
+                    'is_staple': is_staple,
+                    'is_always_available': is_always_avail,
+                },
+            )
+            if was_created:
+                created += 1
+            else:
+                skipped += 1
+
+        self.message_user(
+            request,
+            f'Seeding fullført: {created} opprettet, {skipped} fantes allerede.',
+        )
+        return redirect('..')
 
 
 class DinnerComponentInline(admin.TabularInline):

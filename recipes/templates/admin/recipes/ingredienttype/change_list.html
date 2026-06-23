@@ -1,0 +1,16 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+    {{ block.super }}
+    <li>
+        <form method="post" action="seed/">
+            {% csrf_token %}
+            <button type="submit"
+                    class="button"
+                    style="background:#28a745;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:13px;">
+                🌱 Seed norske ingredienser
+            </button>
+        </form>
+    </li>
+{% endblock %}

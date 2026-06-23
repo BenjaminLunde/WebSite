@@ -122,6 +122,18 @@ def shopping(request):
             if tagg:
                 items_by_tagg[tagg.id].append(item)
 
+        # Attach parsed qty / unit so the template can pre-fill the editable inputs
+        for items_list in items_by_tagg.values():
+            for item in items_list:
+                qty, unit = parse_amount(item.amount)
+                if qty is not None:
+                    n = qty.normalize()
+                    item._qty = str(int(n)) if n == n.to_integral_value() else str(n)
+                    item._unit = unit
+                else:
+                    item._qty = ''
+                    item._unit = UNITS[0]
+
         tagg_with_items = [
             (tagg, items_by_tagg[tagg.id])
             for tagg in tagg_list

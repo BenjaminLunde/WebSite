@@ -4,7 +4,7 @@
 <div class="page-pad">
     <h1>Shopping List</h1>
 
-    <!-- ── Add item form ─────────────────────────────────────────── -->
+    <!-- ── Add item (page-reload is fine for adding) ─────────────── -->
     <div class="card mb-4">
         <div class="card-body">
             <h6 class="card-title mb-3"><i class="fas fa-plus-circle mr-1"></i>Add item</h6>
@@ -21,22 +21,21 @@
                             {% endfor %}
                         </datalist>
                         <input type="hidden" name="ingredient_type" id="ingredient-type-id">
-                        <div class="invalid-feedback">Please select a valid ingredient.</div>
+                        <div class="invalid-feedback">Please select a valid ingredient from the list.</div>
                     </div>
                     <div style="width:85px;">
                         <label class="small mb-1">Quantity</label>
                         <input type="number" name="qty" min="0.01" step="any" required
-                               class="form-control" placeholder="qty" id="addQty">
+                               class="form-control" placeholder="qty">
                     </div>
                     <div style="width:72px;">
                         <label class="small mb-1">Unit</label>
-                        <select name="unit" class="form-control" id="addUnit">
+                        <select name="unit" class="form-control">
                             {% for u in units %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
                         </select>
                     </div>
                     <div>
-                        <!-- invisible label keeps baseline alignment -->
-                        <label class="small mb-1 d-block" style="visibility:hidden;">add</label>
+                        <label class="small mb-1 d-block" style="visibility:hidden;">x</label>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-plus mr-1"></i>Add
                         </button>
@@ -46,137 +45,120 @@
         </div>
     </div>
 
-    {% if has_items %}
-    <!-- ── Main shopping form ────────────────────────────────────── -->
-    <form id="shopForm" action="/recipes/shopping/add-to-pantry/" method="post">
+    <!-- Hidden "Move to Pantry" form — JS populates it and submits -->
+    <form id="pantryForm" action="/recipes/shopping/add-to-pantry/" method="post" style="display:none;">
         {% csrf_token %}
+    </form>
 
-        <!-- Toolbar -->
-        <div class="mb-3">
+    <!-- ── Shopping items ────────────────────────────────────────── -->
+    <div id="shopping-section">
+    {% if has_items %}
+
+        <div class="mb-3 d-flex flex-wrap" style="gap:8px;">
             <button type="button" onclick="toggleCheckAll()" class="btn btn-secondary">
                 <i class="fas fa-check-square mr-1"></i>Check all
             </button>
+            <button type="button" onclick="moveToPantry()" class="btn btn-success">
+                <i class="fas fa-box-open mr-1"></i>Move to Pantry
+            </button>
+            <button type="button" onclick="emptyList()" class="btn btn-danger">
+                <i class="fas fa-trash mr-1"></i>Empty list
+            </button>
         </div>
 
-        <!-- Category cards -->
-        <div class="row">
-            {% for tagg, items in tagg_with_items %}
-            <div class="col-12 col-sm-6 col-lg-3 mb-3">
+        <div class="row" id="items-row">
+        {% for tagg, items in tagg_with_items %}
+            <div class="col-12 col-sm-6 col-lg-3 mb-3" id="cat-{{ tagg.id }}">
                 <div class="bg-primary text-white border border-white h-100">
                     <div class="p-3">
-                        <h6 class="text-center mb-2">{{ tagg.name }}</h6>
-                        <hr style="border-color:rgba(255,255,255,0.5);margin:8px 0 12px;">
+                        <h6 class="text-center mb-1">{{ tagg.name }}</h6>
+                        <hr style="border-color:rgba(255,255,255,0.5);margin:6px 0 10px;">
 
                         {% for item in items %}
-                        <div class="mb-3" id="item-row-{{ item.id }}">
+                        <div id="item-row-{{ item.id }}"
+                             class="d-flex align-items-center mb-2"
+                             data-tagg="{{ tagg.id }}">
 
-                            <!-- ── View row ── -->
-                            <div id="view-{{ item.id }}" class="d-flex align-items-center">
-                                <input type="checkbox"
-                                       name="shop_ids"
-                                       value="{{ item.id }}"
-                                       id="chk_{{ item.id }}"
-                                       class="shop-checkbox"
-                                       style="width:22px;height:22px;flex-shrink:0;cursor:pointer;">
-                                <label for="chk_{{ item.id }}"
-                                       class="ml-2 mb-0 flex-fill"
-                                       style="font-size:15px;cursor:pointer;">
-                                    {{ item.name }}
-                                </label>
-                                <!-- Tap the amount badge to edit -->
-                                <button type="button"
-                                        class="btn btn-sm btn-light text-dark mr-1"
-                                        onclick="openEdit({{ item.id }}, '{{ item.amount }}')"
-                                        title="Tap to change amount"
-                                        style="min-width:62px;font-size:13px;font-weight:600;">
-                                    {{ item.amount }}
-                                </button>
-                                <a href="/recipes/delete/{{ item.id }}"
-                                   class="btn btn-sm btn-outline-light"
-                                   title="Remove from list">
-                                    <i class="fa fa-trash"></i>
-                                </a>
-                            </div>
+                            <input type="checkbox"
+                                   class="shop-checkbox"
+                                   value="{{ item.id }}"
+                                   style="width:22px;height:22px;flex-shrink:0;cursor:pointer;">
 
-                            <!-- ── Edit row (hidden until amount tapped) ── -->
-                            <div id="edit-{{ item.id }}" style="display:none;margin-top:6px;">
-                                <form action="/recipes/shopping/update/{{ item.id }}/" method="post"
-                                      class="d-flex align-items-center" style="gap:4px;">
-                                    {% csrf_token %}
-                                    <input type="number"
-                                           name="qty"
-                                           id="edit-qty-{{ item.id }}"
-                                           min="0.01" step="any" required
-                                           class="form-control form-control-sm"
-                                           style="width:72px;background:#fff;color:#333;">
-                                    <select name="unit"
-                                            id="edit-unit-{{ item.id }}"
-                                            class="form-control form-control-sm"
-                                            style="width:65px;background:#fff;color:#333;">
-                                        {% for u in units %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
-                                    </select>
-                                    <button type="submit" class="btn btn-sm btn-success" title="Save">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-light"
-                                            onclick="closeEdit({{ item.id }})"
-                                            title="Cancel">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </form>
-                            </div>
+                            <span class="ml-2 flex-fill"
+                                  style="font-size:14px;min-width:0;overflow:hidden;
+                                         text-overflow:ellipsis;white-space:nowrap;"
+                                  title="{{ item.name }}">
+                                {{ item.name }}
+                            </span>
 
+                            <!-- Qty — auto-saves on change (debounced) -->
+                            <input type="number"
+                                   id="qty-{{ item.id }}"
+                                   class="shop-qty form-control form-control-sm ml-1"
+                                   value="{{ item._qty }}"
+                                   data-id="{{ item.id }}"
+                                   min="0.01" step="any"
+                                   style="width:58px;background:#fff;color:#333;">
+
+                            <!-- Unit — auto-saves immediately on change -->
+                            <select id="unit-{{ item.id }}"
+                                    class="shop-unit form-control form-control-sm ml-1"
+                                    data-id="{{ item.id }}"
+                                    style="width:56px;background:#fff;color:#333;">
+                                {% for u in units %}
+                                <option value="{{ u }}"
+                                    {% if u == item._unit %}selected{% endif %}>{{ u }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-light ml-1"
+                                    onclick="deleteItem({{ item.id }}, {{ tagg.id }})"
+                                    title="Remove">
+                                <i class="fa fa-trash"></i>
+                            </button>
                         </div>
                         {% endfor %}
 
                     </div>
                 </div>
             </div>
-            {% endfor %}
-        </div>
-
-        <!-- Action bar -->
-        <div class="d-flex mt-3 mb-4" style="gap:8px;">
-            <a href="/recipes/delete_all" class="btn btn-danger flex-fill">
-                <i class="fas fa-trash mr-1"></i>Empty list
-            </a>
-            <button type="submit" class="btn btn-success flex-fill">
-                <i class="fas fa-box-open mr-1"></i>Move to Pantry
-            </button>
-        </div>
-    </form>
+        {% endfor %}
+        </div><!-- /#items-row -->
 
     {% else %}
-    <p class="text-muted mt-3">
-        Your shopping list is empty. Add items above or send ingredients from a recipe.
-    </p>
+        <p class="text-muted mt-3" id="empty-msg">
+            Your shopping list is empty. Add items above or send ingredients from a recipe.
+        </p>
     {% endif %}
+    </div><!-- /#shopping-section -->
+
 </div>
 
 <script>
-// ── Ingredient search → hidden ID field ─────────────────────────
+// ── CSRF ─────────────────────────────────────────────────────────
+function getCsrf() {
+    return document.querySelector('#addItemForm [name=csrfmiddlewaretoken]').value;
+}
+
+// ── Ingredient search → hidden ID ────────────────────────────────
 const ingMap = {
     {% for itype in ingredient_type_list %}"{{ itype.name|escapejs }}": {{ itype.id }},
     {% endfor %}
 };
-
 const ingSearchEl = document.getElementById('ingredient-search');
 const ingIdEl     = document.getElementById('ingredient-type-id');
 
-function syncIngredientId() {
+function syncIngId() {
     const id = ingMap[ingSearchEl.value.trim()];
     ingIdEl.value = (id !== undefined) ? id : '';
-    if (id !== undefined) {
-        ingSearchEl.classList.remove('is-invalid');
-    }
+    if (id !== undefined) ingSearchEl.classList.remove('is-invalid');
 }
-
-ingSearchEl.addEventListener('input',  syncIngredientId);
-ingSearchEl.addEventListener('change', syncIngredientId);  // fires when datalist item selected
+ingSearchEl.addEventListener('input',  syncIngId);
+ingSearchEl.addEventListener('change', syncIngId);  // fires when datalist option selected
 
 document.getElementById('addItemForm').addEventListener('submit', function (e) {
-    syncIngredientId();  // one last sync before submit
+    syncIngId();
     if (!ingIdEl.value) {
         e.preventDefault();
         ingSearchEl.classList.add('is-invalid');
@@ -184,38 +166,113 @@ document.getElementById('addItemForm').addEventListener('submit', function (e) {
     }
 });
 
-// ── Inline amount edit ──────────────────────────────────────────
-function openEdit(id, amount) {
-    const parts  = amount.trim().split(/\s+/);
-    const qty    = parts[0] || '';
-    const unit   = (parts[1] || 'g').toLowerCase();
+// ── Auto-save amount (no button, no page reload) ─────────────────
+const saveTimers = {};
 
-    const qtyEl  = document.getElementById('edit-qty-'  + id);
-    const unitEl = document.getElementById('edit-unit-' + id);
+function scheduleAmountSave(id) {
+    clearTimeout(saveTimers[id]);
+    saveTimers[id] = setTimeout(() => saveAmount(id), 700);
+}
 
-    if (qtyEl)  { qtyEl.value = qty; }
-    if (unitEl) {
-        for (let opt of unitEl.options) {
-            opt.selected = (opt.value === unit);
-        }
+async function saveAmount(id) {
+    clearTimeout(saveTimers[id]);
+    const qtyEl  = document.getElementById('qty-'  + id);
+    const unitEl = document.getElementById('unit-' + id);
+    if (!qtyEl || !unitEl) return;
+
+    const qty = qtyEl.value.trim();
+    if (!qty || parseFloat(qty) <= 0) return;
+
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', getCsrf());
+    fd.append('qty',  qty);
+    fd.append('unit', unitEl.value);
+
+    try {
+        await fetch('/recipes/shopping/update/' + id + '/', {
+            method: 'POST', body: fd, redirect: 'manual',
+        });
+        // Green flash to confirm save
+        [qtyEl, unitEl].forEach(el => {
+            el.style.transition  = 'border-color 0.2s';
+            el.style.borderColor = '#28a745';
+            setTimeout(() => { el.style.borderColor = ''; }, 1100);
+        });
+    } catch (err) {
+        console.error('Save failed', err);
     }
-
-    document.getElementById('view-' + id).style.display = 'none';
-    document.getElementById('edit-' + id).style.display = '';
-
-    if (qtyEl) { qtyEl.focus(); qtyEl.select(); }
 }
 
-function closeEdit(id) {
-    document.getElementById('view-' + id).style.display = '';
-    document.getElementById('edit-' + id).style.display = 'none';
+// Event delegation — works even for rows injected after page load
+document.addEventListener('input', function (e) {
+    if (e.target.matches('.shop-qty'))  scheduleAmountSave(e.target.dataset.id);
+});
+document.addEventListener('change', function (e) {
+    if (e.target.matches('.shop-unit')) saveAmount(e.target.dataset.id);
+});
+
+// ── Delete (no page reload) ──────────────────────────────────────
+async function deleteItem(id, taggId) {
+    // Fire-and-forget GET — view deletes and redirects, we ignore the redirect
+    fetch('/recipes/delete/' + id, { redirect: 'manual' }).catch(() => {});
+
+    const row = document.getElementById('item-row-' + id);
+    if (!row) return;
+    row.style.transition = 'opacity 0.15s';
+    row.style.opacity    = '0';
+    setTimeout(() => {
+        row.remove();
+        // Remove the category card if it's now empty
+        const card = document.getElementById('cat-' + taggId);
+        if (card && !card.querySelectorAll('[id^="item-row-"]').length) {
+            card.style.transition = 'opacity 0.2s';
+            card.style.opacity    = '0';
+            setTimeout(() => { card.remove(); checkEmpty(); }, 200);
+        } else {
+            checkEmpty();
+        }
+    }, 150);
 }
 
-// ── Check all ───────────────────────────────────────────────────
+// ── Empty list (no page reload) ──────────────────────────────────
+async function emptyList() {
+    if (!confirm('Remove everything from your shopping list?')) return;
+    fetch('/recipes/delete_all/', { redirect: 'manual' }).catch(() => {});
+    showEmptyState();
+}
+
+// ── Move to Pantry (page reload is fine — major action) ──────────
+function moveToPantry() {
+    const checked = Array.from(document.querySelectorAll('.shop-checkbox:checked'));
+    if (!checked.length) { alert('Check some items first.'); return; }
+
+    const form = document.getElementById('pantryForm');
+    form.querySelectorAll('input[name="shop_ids"]').forEach(el => el.remove());
+    checked.forEach(cb => {
+        const inp = document.createElement('input');
+        inp.type  = 'hidden';
+        inp.name  = 'shop_ids';
+        inp.value = cb.value;
+        form.appendChild(inp);
+    });
+    form.submit();
+}
+
+// ── Helpers ──────────────────────────────────────────────────────
+function checkEmpty() {
+    if (!document.querySelectorAll('[id^="item-row-"]').length) showEmptyState();
+}
+
+function showEmptyState() {
+    document.getElementById('shopping-section').innerHTML =
+        '<p class="text-muted mt-3">Your shopping list is empty. ' +
+        'Add items above or send ingredients from a recipe.</p>';
+}
+
 function toggleCheckAll() {
-    var boxes = document.querySelectorAll('.shop-checkbox');
-    var allChecked = Array.prototype.every.call(boxes, function (b) { return b.checked; });
-    Array.prototype.forEach.call(boxes, function (b) { b.checked = !allChecked; });
+    const boxes = document.querySelectorAll('.shop-checkbox');
+    const allChecked = Array.from(boxes).every(b => b.checked);
+    boxes.forEach(b => b.checked = !allChecked);
 }
 </script>
 {% endblock %}

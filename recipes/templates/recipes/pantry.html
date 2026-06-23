@@ -55,25 +55,20 @@
     <div id="pantry-section">
     {% if has_items %}
 
-        <div class="mb-3 d-flex flex-wrap" style="gap:8px;">
+        <!-- Check all at top -->
+        <div class="mb-3">
             <button type="button" onclick="toggleCheckAll()" class="btn btn-secondary">
                 <i class="fas fa-check-square mr-1"></i>Check all
-            </button>
-            <button type="button" onclick="removeSelected()" class="btn btn-secondary">
-                <i class="fas fa-minus-circle mr-1"></i>Remove selected
-            </button>
-            <button type="button" onclick="emptyPantry()" class="btn btn-danger">
-                <i class="fas fa-trash mr-1"></i>Empty pantry
             </button>
         </div>
 
         <div class="row" id="items-row">
         {% for tagg, items in tagg_with_items %}
             <div class="col-12 col-sm-6 col-lg-3 mb-3" id="cat-{{ tagg.id }}">
-                <div class="bg-primary text-white border border-white h-100">
-                    <div class="p-3">
-                        <h6 class="text-center mb-1">{{ tagg.name }}</h6>
-                        <hr style="border-color:rgba(255,255,255,0.5);margin:6px 0 10px;">
+                <div class="text-white bg-primary border border-white h-100">
+                    <div class="card-body">
+                        <h6 class="card-title text-center">{{ tagg.name }}</h6>
+                        <hr style="height:2px;border-width:0;color:white;background-color:white;">
 
                         {% for item in items %}
                         <div id="item-row-{{ item.id }}"
@@ -138,6 +133,16 @@
             </div>
         {% endfor %}
         </div><!-- /#items-row -->
+
+        <!-- Action bar at the bottom -->
+        <div class="d-flex mt-3 mb-4" style="gap:8px;">
+            <button type="button" onclick="emptyPantry()" class="btn btn-danger flex-fill">
+                <i class="fas fa-trash mr-1"></i>Empty pantry
+            </button>
+            <button type="button" onclick="removeSelected()" class="btn btn-secondary flex-fill">
+                <i class="fas fa-minus-circle mr-1"></i>Remove selected
+            </button>
+        </div>
 
     {% else %}
         <p class="text-muted mt-3">Your pantry is empty. Add items above.</p>

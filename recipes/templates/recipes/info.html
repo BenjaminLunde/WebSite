@@ -64,19 +64,19 @@
                 </ul>
 
                 <!-- Cook log summary -->
-                {% if info.last_cooked or info.score %}
+                {% if cook_logs %}
                 <div class="mt-3 p-3" style="background: rgba(0,0,0,0.05); border-radius: 8px;">
-                    {% if info.last_cooked %}
                     <small class="text-muted d-block">
                         <i class="fas fa-calendar-check mr-1"></i>
-                        Last cooked: <strong>{{ info.last_cooked }}</strong>
+                        Sist laget: <strong>{{ cook_logs.0.date }}</strong>
+                        &nbsp;·&nbsp;
+                        <i class="fas fa-fire mr-1" style="color:#e67e22;"></i>
+                        Laget <strong>{{ cook_logs|length }}</strong> gang{{ cook_logs|length|pluralize:"er" }}
                     </small>
-                    {% endif %}
-                    {% if info.score %}
+                    {% if cook_logs.0.score %}
                     <small class="text-muted d-block mt-1">
                         <i class="fas fa-star mr-1" style="color:#f0ad4e;"></i>
-                        Score: <strong>{{ info.score }}/10</strong>
-                        {% for i in "1234567890" %}{% if forloop.counter <= info.score %}⭐{% endif %}{% endfor %}
+                        Siste score: <strong>{{ cook_logs.0.score }}/10</strong>
                     </small>
                     {% endif %}
                 </div>
@@ -199,6 +199,46 @@
     </div>
     {% endif %}
 
+    <!-- Cook History -->
+    {% if cook_logs and request.user.is_authenticated %}
+    <div class="row pb-5" style="width:100%; padding-left:40px; padding-right:40px;">
+        <div class="col-12">
+            <h4 class="mb-3"><i class="fas fa-history mr-2"></i>Kokelogg</h4>
+            {% for log in cook_logs %}
+            <div class="card mb-2 shadow-sm">
+                <div class="card-body py-2 px-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>{{ log.date }}</strong>
+                            {% if log.score %}
+                            <span class="badge badge-warning ml-2">{{ log.score }}/10
+                                {% if log.score >= 8 %}⭐{% endif %}
+                            </span>
+                            {% endif %}
+                            <small class="text-muted ml-2">Koke nr. {{ forloop.revcounter }}</small>
+                        </div>
+                        {% if request.user.is_staff %}
+                        <form method="post" action="/recipes/{{ info.id }}/cook-log/{{ log.id }}/delete/"
+                              onsubmit="return confirm('Slett denne loggoppføringen?');"
+                              class="mb-0">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2"
+                                    title="Slett">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% if log.notes %}
+                    <p class="mb-0 mt-1 text-muted" style="white-space:pre-line;">{{ log.notes }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Log Cook Modal -->
     {% if request.user.is_authenticated %}
     <div class="modal fade" id="logCookModal" tabindex="-1" role="dialog" aria-labelledby="logCookModalLabel" aria-hidden="true">
@@ -228,19 +268,19 @@
                             <div class="d-flex align-items-center">
                                 <input type="range" class="custom-range mr-3" id="score" name="score"
                                        min="1" max="10" step="1"
-                                       value="{{ info.score|default:7 }}"
+                                       value="{% if cook_logs %}{{ cook_logs.0.score|default:7 }}{% else %}7{% endif %}"
                                        oninput="document.getElementById('scoreDisplay').textContent = this.value"
                                        style="flex:1;">
                                 <span id="scoreDisplay" class="badge badge-primary" style="font-size:1.1rem; min-width:2.5rem; text-align:center;">
-                                    {{ info.score|default:7 }}
+                                    {% if cook_logs %}{{ cook_logs.0.score|default:7 }}{% else %}7{% endif %}
                                 </span>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="revision_notes">Notes for next time</label>
+                            <label for="revision_notes">Notater fra denne gangen</label>
                             <textarea class="form-control" id="revision_notes" name="revision_notes"
-                                      rows="4" placeholder="What would you change? E.g. 'Add more garlic', 'Reduce cooking time by 5 min'...">{{ info.revision_notes }}</textarea>
+                                      rows="4" placeholder="Hva ville du endret? F.eks. 'Mer hvitløk', 'Kortere steketid'..."></textarea>
                         </div>
 
                     </div>

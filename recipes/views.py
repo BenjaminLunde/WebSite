@@ -15,6 +15,7 @@ from django.contrib.auth.models import User
 from .models import (
     Info, Tagg, RecipeTag, Ingredient, IngredientType, IngredientForm,
     Instruction, IngredientToShop, PantryItem, Dinner, DinnerComponent, RecipeSource,
+    CookLog,
 )
 from .units import UNITS, parse_amount, format_amount, add_amounts, subtract_amounts
 
@@ -57,10 +58,12 @@ def get_one(request, info_id):
             PantryItem.objects.filter(user=request.user)
             .values_list('ingredient_type_id', flat=True)
         )
+    cook_logs = list(info.cook_logs.order_by('-date', '-created_at'))
     return render(request, 'recipes/info.html', {
         'info': info,
         'dinners': dinners,
         'pantry_type_ids': pantry_type_ids,
+        'cook_logs': cook_logs,
     })
 
 
@@ -747,7 +750,7 @@ def edit_recipe(request, info_id):
 
 def log_cook(request, info_id):
     """
-    POST: update the cook-log fields (last_cooked, score, revision_notes) on a recipe.
+    POST: create a new CookLog entry and keep the Info cached fields in sync.
     Only authenticated users can log cooks.
     """
     if not request.user.is_authenticated or request.method != 'POST':
@@ -756,30 +759,62 @@ def log_cook(request, info_id):
     import datetime
     recipe = get_object_or_404(Info, pk=info_id)
 
-    raw_date = request.POST.get('last_cooked', '').strip()
+    raw_date  = request.POST.get('last_cooked', '').strip()
     raw_score = request.POST.get('score', '').strip()
-    notes = request.POST.get('revision_notes', '').strip()
+    notes     = request.POST.get('revision_notes', '').strip()
 
-    # Date
-    if raw_date:
-        try:
-            recipe.last_cooked = datetime.date.fromisoformat(raw_date)
-        except ValueError:
-            pass
-    else:
-        recipe.last_cooked = datetime.date.today()
+    # Parse date
+    try:
+        cook_date = datetime.date.fromisoformat(raw_date) if raw_date else datetime.date.today()
+    except ValueError:
+        cook_date = datetime.date.today()
 
-    # Score (1–10)
+    # Parse score (1–10)
+    score_val = None
     if raw_score:
         try:
-            score_val = int(raw_score)
-            if 1 <= score_val <= 10:
-                recipe.score = score_val
+            v = int(raw_score)
+            if 1 <= v <= 10:
+                score_val = v
         except ValueError:
             pass
 
+    # Create the historical entry
+    CookLog.objects.create(info=recipe, date=cook_date, score=score_val, notes=notes)
+
+    # Keep the cached scalar fields on Info pointing to the latest cook
+    recipe.last_cooked    = cook_date
+    recipe.score          = score_val
     recipe.revision_notes = notes
     recipe.save()
+
+    return HttpResponseRedirect(f'/recipes/{info_id}/')
+
+
+def delete_cook_log(request, info_id, log_id):
+    """
+    Staff-only POST: delete a single CookLog entry, then re-sync Info cached fields.
+    """
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return HttpResponseRedirect(f'/recipes/{info_id}/')
+
+    if request.method == 'POST':
+        recipe = get_object_or_404(Info, pk=info_id)
+        log    = get_object_or_404(CookLog, pk=log_id, info=recipe)
+        log.delete()
+
+        # Re-sync Info from the now-latest CookLog (or clear if none left)
+        latest = recipe.cook_logs.order_by('-date', '-created_at').first()
+        if latest:
+            recipe.last_cooked    = latest.date
+            recipe.score          = latest.score
+            recipe.revision_notes = latest.notes
+        else:
+            recipe.last_cooked    = None
+            recipe.score          = None
+            recipe.revision_notes = ''
+        recipe.save()
+
     return HttpResponseRedirect(f'/recipes/{info_id}/')
 
 

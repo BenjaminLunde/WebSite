@@ -6,7 +6,7 @@ from django.shortcuts import redirect
 from recipes.models import (
     Ingredient, Instruction, Tagg, RecipeTag, PantryItem,
     IngredientType, Dinner, DinnerComponent, RecipeSource,
-    IngredientToShop,
+    IngredientToShop, CookLog,
 )
 from django.contrib.auth.models import User
 
@@ -732,3 +732,15 @@ class RecipeSourceAdmin(admin.ModelAdmin):
             'Example: https://www.allrecipes.com/search?q={query}'
         )
     }
+
+
+@admin.register(CookLog)
+class CookLogAdmin(admin.ModelAdmin):
+    list_display = ('info', 'date', 'score', 'notes_preview', 'created_at')
+    list_filter = ('info',)
+    ordering = ('-date', '-created_at')
+    readonly_fields = ('created_at',)
+
+    def notes_preview(self, obj):
+        return obj.notes[:60] + '…' if len(obj.notes) > 60 else obj.notes
+    notes_preview.short_description = 'Notes'

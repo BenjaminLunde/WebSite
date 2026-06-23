@@ -189,6 +189,21 @@ class PantryItem(models.Model):
         return self.name
 
 
+class CookLog(models.Model):
+    """One cook session logged against a recipe — preserves full history."""
+    info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name='cook_logs')
+    date = models.DateField()
+    score = models.IntegerField(null=True, blank=True, help_text='Score 1–10')
+    notes = models.TextField(blank=True, help_text='Notes from this cook')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+
+    def __str__(self):
+        return f"{self.info.title} — {self.date}"
+
+
 class RecipeSource(models.Model):
     """
     Trusted cooking websites used by the recipe importer.

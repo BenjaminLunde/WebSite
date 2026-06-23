@@ -1,13 +1,13 @@
 """
-Recipe importer — fetch a cooking website and parse it with Gemini AI.
+Recipe importer — fetch a cooking website and parse it with Claude AI.
 
 Workflow:
   1. User picks a trusted source (RecipeSource) or pastes a URL directly.
   2. We fetch the page and strip it to readable text.
-  3. Gemini extracts the recipe as structured JSON.
+  3. Claude extracts the recipe as structured JSON.
   4. We create a draft Info + Ingredients + Instructions in the database.
 
-Requires GOOGLE_API_KEY environment variable (same one used by the meal planner).
+Requires ANTHROPIC_API_KEY environment variable (same one used by the meal planner).
 """
 import os
 import json
@@ -85,7 +85,7 @@ def get_links_from_page(url, base_url):
 
 
 # ---------------------------------------------------------------------------
-# Gemini parsing
+# Claude parsing
 # ---------------------------------------------------------------------------
 
 _PARSE_PROMPT = """\
@@ -124,7 +124,7 @@ def gemini_parse_recipe(page_text):
     Ask Gemini to extract a structured recipe from *page_text*.
     Returns (data_dict, error_string). On success error_string is ''.
     """
-    env_var = 'GOOGLE_API_KEY'
+    env_var = 'ANTHROPIC_API_KEY'
     if not os.environ.get(env_var):
         return None, (
             f'{env_var} is not set. '
@@ -132,24 +132,25 @@ def gemini_parse_recipe(page_text):
         )
 
     try:
-        from google import genai
+        import anthropic
     except ImportError:
-        return None, 'google-genai is not installed (check requirements.txt).'
+        return None, 'anthropic is not installed (check requirements.txt).'
 
     try:
-        client = genai.Client()  # reads GOOGLE_API_KEY from environment automatically
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=_PARSE_PROMPT + page_text,
+        client = anthropic.Anthropic()
+        response = client.messages.create(
+            model='claude-haiku-4-5',
+            max_tokens=4096,
+            messages=[{"role": "user", "content": _PARSE_PROMPT + page_text}],
         )
-        raw = response.text.strip()
+        raw = response.content[0].text.strip()
         # Strip markdown code fences if present
         if raw.startswith('```'):
             raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
         data = json.loads(raw)
         return data, ''
     except json.JSONDecodeError:
-        return None, 'Gemini returned a response that could not be parsed as JSON. Try again.'
+        return None, 'AI returned a response that could not be parsed as JSON. Try again.'
     except Exception as exc:
         return None, f'AI request failed: {exc}'
 
@@ -195,7 +196,7 @@ def generate_recipe(query):
     No web scraping — Gemini writes the recipe itself.
     Returns (data_dict, error_string).
     """
-    env_var = 'GOOGLE_API_KEY'
+    env_var = 'ANTHROPIC_API_KEY'
     if not os.environ.get(env_var):
         return None, (
             f'{env_var} is not set. '
@@ -203,23 +204,24 @@ def generate_recipe(query):
         )
 
     try:
-        from google import genai
+        import anthropic
     except ImportError:
-        return None, 'google-genai is not installed (check requirements.txt).'
+        return None, 'anthropic is not installed (check requirements.txt).'
 
     try:
-        client = genai.Client()  # reads GOOGLE_API_KEY from environment automatically
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=_GENERATE_PROMPT + query,
+        client = anthropic.Anthropic()
+        response = client.messages.create(
+            model='claude-haiku-4-5',
+            max_tokens=4096,
+            messages=[{"role": "user", "content": _GENERATE_PROMPT + query}],
         )
-        raw = response.text.strip()
+        raw = response.content[0].text.strip()
         if raw.startswith('```'):
             raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
         data = json.loads(raw)
         return data, ''
     except json.JSONDecodeError:
-        return None, 'Gemini returned a response that could not be parsed as JSON. Try again.'
+        return None, 'AI returned a response that could not be parsed as JSON. Try again.'
     except Exception as exc:
         return None, f'AI request failed: {exc}'
 
@@ -289,11 +291,11 @@ def _normalize_new_ingredients(new_type_ids):
 
     Runs silently — failures are swallowed so the recipe is still saved.
     """
-    if not os.environ.get('GOOGLE_API_KEY') or not new_type_ids:
+    if not os.environ.get('ANTHROPIC_API_KEY') or not new_type_ids:
         return
 
     try:
-        from google import genai
+        import anthropic
     except ImportError:
         return
 
@@ -326,9 +328,13 @@ def _normalize_new_ingredients(new_type_ids):
     )
 
     try:
-        client = genai.Client()
-        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
-        raw = response.text.strip()
+        client = anthropic.Anthropic()
+        response = client.messages.create(
+            model='claude-haiku-4-5',
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = response.content[0].text.strip()
         if raw.startswith('```'):
             raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
         result = json.loads(raw)

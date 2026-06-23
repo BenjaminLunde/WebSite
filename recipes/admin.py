@@ -390,14 +390,14 @@ def ai_translate_to_norwegian(modeladmin, request, queryset):
         modeladmin.message_user(request, 'Select 100 or fewer at a time.', level='warning')
         return
 
-    if not os.environ.get('GOOGLE_API_KEY'):
-        modeladmin.message_user(request, 'GOOGLE_API_KEY is not set.', level='error')
+    if not os.environ.get('ANTHROPIC_API_KEY'):
+        modeladmin.message_user(request, 'ANTHROPIC_API_KEY is not set.', level='error')
         return
 
     try:
-        from google import genai
+        import anthropic
     except ImportError:
-        modeladmin.message_user(request, 'google-genai is not installed.', level='error')
+        modeladmin.message_user(request, 'anthropic is not installed.', level='error')
         return
 
     items = [{'id': it.id, 'name': it.name} for it in queryset]
@@ -412,9 +412,13 @@ def ai_translate_to_norwegian(modeladmin, request, queryset):
     )
 
     try:
-        client = genai.Client()
-        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
-        raw = response.text.strip()
+        client = anthropic.Anthropic()
+        response = client.messages.create(
+            model='claude-haiku-4-5',
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = response.content[0].text.strip()
         if raw.startswith('```'):
             raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
         data = json.loads(raw)
@@ -451,14 +455,14 @@ def ai_merge_duplicate_ingredients(modeladmin, request, queryset):
         )
         return
 
-    if not os.environ.get('GOOGLE_API_KEY'):
-        modeladmin.message_user(request, 'GOOGLE_API_KEY is not set.', level='error')
+    if not os.environ.get('ANTHROPIC_API_KEY'):
+        modeladmin.message_user(request, 'ANTHROPIC_API_KEY is not set.', level='error')
         return
 
     try:
-        from google import genai
+        import anthropic
     except ImportError:
-        modeladmin.message_user(request, 'google-genai is not installed.', level='error')
+        modeladmin.message_user(request, 'anthropic is not installed.', level='error')
         return
 
     items = [{'id': it.id, 'name': it.name} for it in queryset]
@@ -481,9 +485,13 @@ def ai_merge_duplicate_ingredients(modeladmin, request, queryset):
     )
 
     try:
-        client = genai.Client()
-        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
-        raw = response.text.strip()
+        client = anthropic.Anthropic()
+        response = client.messages.create(
+            model='claude-haiku-4-5',
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = response.content[0].text.strip()
         if raw.startswith('```'):
             raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
         data = json.loads(raw)
@@ -545,14 +553,14 @@ def ai_enrich_ingredient_types(modeladmin, request, queryset):
         )
         return
 
-    if not os.environ.get('GOOGLE_API_KEY'):
-        modeladmin.message_user(request, 'GOOGLE_API_KEY is not set.', level='error')
+    if not os.environ.get('ANTHROPIC_API_KEY'):
+        modeladmin.message_user(request, 'ANTHROPIC_API_KEY is not set.', level='error')
         return
 
     try:
-        from google import genai
+        import anthropic
     except ImportError:
-        modeladmin.message_user(request, 'google-genai is not installed.', level='error')
+        modeladmin.message_user(request, 'anthropic is not installed.', level='error')
         return
 
     tag_names = list(Tagg.objects.values_list('name', flat=True))
@@ -576,9 +584,13 @@ def ai_enrich_ingredient_types(modeladmin, request, queryset):
     )
 
     try:
-        client = genai.Client()
-        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
-        raw = response.text.strip()
+        client = anthropic.Anthropic()
+        response = client.messages.create(
+            model='claude-haiku-4-5',
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = response.content[0].text.strip()
         if raw.startswith('```'):
             raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
         data = json.loads(raw)

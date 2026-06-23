@@ -1,8 +1,8 @@
 """
-AI meal planning helper using Google Gemini Flash (free tier).
+AI meal planning helper using Claude (Anthropic).
 
-Setup: add the variable GOOGLE_API_KEY to your Railway environment variables.
-The google-generativeai library reads this variable automatically.
+Setup: add the variable ANTHROPIC_API_KEY to your Railway environment variables.
+The anthropic library reads this variable automatically.
 """
 import os
 import json
@@ -66,18 +66,18 @@ def suggest_meals(user_request, recipes, pantry_items, dinners=None, settings=No
 
     error is empty string on success.
     """
-    env_var_name = 'GOOGLE_API_KEY'
+    env_var_name = 'ANTHROPIC_API_KEY'
     if not os.environ.get(env_var_name):
         return {}, '', (
             f'{env_var_name} is not set. '
             'Add it as a Railway environment variable and redeploy. '
-            'Get a free key at aistudio.google.com/app/apikey'
+            'Get a key at console.anthropic.com'
         )
 
     try:
-        from google import genai
+        import anthropic
     except ImportError:
-        return {}, '', 'google-genai is not installed (check requirements.txt).'
+        return {}, '', 'anthropic is not installed (check requirements.txt).'
 
     settings = settings or {}
     people = settings.get('people', '')
@@ -107,7 +107,7 @@ def suggest_meals(user_request, recipes, pantry_items, dinners=None, settings=No
     ) if settings_lines else ''
 
     try:
-        client = genai.Client()  # reads GOOGLE_API_KEY from environment automatically
+        client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from environment automatically
 
         recipe_ctx = _recipe_context(recipes)
         pantry_ctx = _pantry_context(pantry_items)
@@ -164,11 +164,12 @@ def suggest_meals(user_request, recipes, pantry_items, dinners=None, settings=No
             f"Current pantry:\n{pantry_ctx}"
         )
 
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
+        response = client.messages.create(
+            model='claude-haiku-4-5',
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}],
         )
-        raw = response.text.strip()
+        raw = response.content[0].text.strip()
         # Strip markdown code fences if the model adds them
         if raw.startswith('```'):
             raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()

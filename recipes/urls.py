@@ -19,6 +19,7 @@ urlpatterns = [
     path('shopping/add-to-pantry/', views.add_checked_to_pantry, name='shopping_add_to_pantry'),
     path('pantry/add/', views.add_to_pantry, name='add_to_pantry'),
     path('pantry/delete/<int:pantry_item_id>/', views.delete_pantry_item, name='delete_pantry_item'),
+    path('pantry/update/<int:item_id>/', views.update_pantry_amount, name='update_pantry_amount'),
     path('pantry/delete_all/', views.delete_all_pantry, name='delete_all_pantry'),
     path('pantry/delete_selected/', views.delete_selected_pantry, name='delete_selected_pantry'),
     path('remove_used/', views.remove_used_ingredients, name='remove_used'),

@@ -258,6 +258,15 @@ def pantry(request):
                 seen[tagg] = []
                 tagg_with_items.append((tagg, seen[tagg]))
             seen[tagg].append(item)
+            # Attach parsed qty / unit for the editable inputs in the template
+            qty, unit = parse_amount(item.amount)
+            if qty is not None:
+                n = qty.normalize()
+                item.qty_display = str(int(n)) if n == n.to_integral_value() else str(n)
+                item.unit_display = unit
+            else:
+                item.qty_display = ''
+                item.unit_display = UNITS[0]
 
         context = {
             'tagg_with_items': tagg_with_items,
@@ -346,6 +355,23 @@ def delete_pantry_item(request, pantry_item_id=None):
         obj = get_object_or_404(PantryItem, id=pantry_item_id)
         if request.user == obj.user:
             obj.delete()
+    return HttpResponseRedirect('/recipes/pantry/')
+
+
+def update_pantry_amount(request, item_id):
+    """Update the amount of a single pantry item (called via AJAX fetch)."""
+    if request.user.is_authenticated and request.method == 'POST':
+        item = get_object_or_404(PantryItem, id=item_id, user=request.user)
+        raw_qty = request.POST.get('qty', '').strip()
+        unit = request.POST.get('unit', '').strip()
+        if raw_qty and unit in UNITS:
+            try:
+                from decimal import Decimal
+                qty = Decimal(raw_qty)
+                item.amount = format_amount(qty, unit)
+                item.save()
+            except Exception:
+                pass
     return HttpResponseRedirect('/recipes/pantry/')
 
 

@@ -146,6 +146,23 @@ def delete_shop(request, ingredientToShop_id=None):
             obj.delete()
     return HttpResponseRedirect("/recipes/shopping/")
 
+
+def update_shop_amount(request, item_id):
+    """Update the amount of a single shopping-list item."""
+    if request.user.is_authenticated and request.method == 'POST':
+        item = get_object_or_404(IngredientToShop, id=item_id, shopper=request.user)
+        raw_qty = request.POST.get('qty', '').strip()
+        unit = request.POST.get('unit', '').strip()
+        if raw_qty and unit in UNITS:
+            try:
+                from decimal import Decimal
+                qty = Decimal(raw_qty)
+                item.amount = format_amount(qty, unit)
+                item.save()
+            except Exception:
+                pass
+    return HttpResponseRedirect('/recipes/shopping/')
+
 def delete_all(request):
     if request.user.is_authenticated:
         shop_list = IngredientToShop.objects.filter(shopper = request.user)

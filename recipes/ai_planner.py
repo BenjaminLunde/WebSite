@@ -6,6 +6,7 @@ The anthropic library reads this variable automatically.
 """
 import os
 import json
+from datetime import date
 
 
 def _recipe_context(recipes):
@@ -13,22 +14,54 @@ def _recipe_context(recipes):
     for r in recipes:
         tags = ', '.join(t.name for t in r.recipe_tags.all()) or 'no tags'
         ings = ', '.join(i.name for i in r.ingredient_set.all())
+        score = f"{r.score}/10" if r.score is not None else 'unrated'
+        last_cooked = r.last_cooked.strftime('%Y-%m-%d') if r.last_cooked else 'never'
         lines.append(
-            f"RECIPE_ID:{r.id} | {r.title} | Tags: {tags} | "
-            f"Time: {r.time} | Serves: {r.servings} | Ingredients: {ings}"
+            f"RECIPE_ID:{r.id} | {r.title} | Score: {score} | Last cooked: {last_cooked} | "
+            f"Tags: {tags} | Time: {r.time} | Serves: {r.servings} | Ingredients: {ings}"
         )
     return '\n'.join(lines) if lines else 'No recipes available'
 
 
 def _dinner_context(dinners):
+    """
+    Format curated dinners for the AI prompt.
+
+    Dinners are flexible templates, not fixed menus. Each role (Main, Side, Sauce…)
+    can have multiple recipe options — default_selected marks the classic/traditional
+    choice, while non-default ones are alternatives the user can swap in.
+    We surface this structure so the AI understands that dinners have variations.
+    """
     if not dinners:
         return 'No curated dinners available'
     lines = []
     for d in dinners:
-        courses = ', '.join(
-            f"{c.role}: {c.recipe.title}" for c in d.components.all()
-        )
-        lines.append(f"DINNER_ID:{d.id} | {d.title} | Courses: {courses}")
+        # Group components by role, preserving order
+        role_groups = {}
+        role_order = []
+        for c in d.components.all():
+            if c.role not in role_groups:
+                role_groups[c.role] = []
+                role_order.append(c.role)
+            role_groups[c.role].append(c)
+
+        role_parts = []
+        for role in role_order:
+            comps = role_groups[role]
+            if len(comps) == 1:
+                # Single option — straightforward
+                role_parts.append(f"{role}: {comps[0].recipe.title}")
+            else:
+                # Multiple options — show classic defaults, then alternatives
+                defaults = [c.recipe.title for c in comps if c.default_selected]
+                alts = [c.recipe.title for c in comps if not c.default_selected]
+                classic = ', '.join(defaults) if defaults else comps[0].recipe.title
+                part = f"{role}: {classic}"
+                if alts:
+                    part += f" (alternatives: {', '.join(alts)})"
+                role_parts.append(part)
+
+        lines.append(f"DINNER_ID:{d.id} | {d.title} | {' | '.join(role_parts)}")
     return '\n'.join(lines)
 
 
@@ -112,21 +145,30 @@ def suggest_meals(user_request, recipes, pantry_items, dinners=None, settings=No
         recipe_ctx = _recipe_context(recipes)
         pantry_ctx = _pantry_context(pantry_items)
         dinner_ctx = _dinner_context(dinners or [])
+        today = date.today().strftime('%Y-%m-%d')
 
         prompt = (
-            "You are an expert weekly meal planner. Create a structured meal plan "
-            "that best matches the user's request.\n\n"
+            f"You are an expert weekly meal planner. Today's date is {today}. "
+            "Create a structured meal plan that best matches the user's request.\n\n"
 
             "RULES — follow every one of these:\n"
             "1. ONLY use RECIPE_IDs from 'Available recipes' or DINNER_IDs from "
             "'Curated dinners'. Never invent IDs.\n"
-            "2. A 'dinner' entry is a full multi-course meal — do NOT add separate "
-            "sides or extras alongside it.\n"
+            "2. Complete meals come in two forms — treat both as standalone dinners that need no extra sides:\n"
+            "   a) A 'dinner' entry (type=dinner) is a curated multi-course template. Each role lists a "
+            "classic default and possibly alternative options. The user picks their exact combination on "
+            "the dinner page. Mention the classic combination in your note.\n"
+            "   b) A recipe tagged 'Dinner' is a complete standalone meal in its own right — "
+            "it does not need sides or extras suggested alongside it.\n"
+            "   Do NOT add separate individual recipes alongside either type.\n"
             "3. PRIORITIZE using perishable pantry ingredients (oldest first). "
             "Pantry staples (flour, sugar, spices, etc.) are always available — "
             "don't prioritise them just because they've been there a long time.\n"
-            "4. Aim for VARIETY — avoid the same main protein or cuisine two days "
-            "in a row.\n"
+            "4. INGREDIENT OVERLAP — prefer combinations of recipes that share "
+            "ingredients where possible to reduce shopping waste. "
+            "Note: ingredient lists are indicative, not exact — proteins and vegetables "
+            "are often interchangeable in a recipe. Think in broader families "
+            "(e.g. root vegetables, leafy greens, white fish) rather than exact ingredient matches.\n"
             "5. Respect ALL dietary restrictions in SETTINGS — this is non-negotiable.\n"
             "6. Respect the max cook time — skip any recipe that clearly exceeds it.\n"
             "7. If the user requests something you cannot fill from the available "
@@ -134,7 +176,15 @@ def suggest_meals(user_request, recipes, pantry_items, dinners=None, settings=No
             "search_query (e.g. 'quick vegetarian lentil soup') so it can be "
             "imported later.\n"
             "8. Keep each 'note' to one short sentence explaining why the item "
-            "was chosen.\n\n"
+            "was chosen.\n"
+            "9. SCORE & RECENCY — use these fields on each recipe to rank candidates:\n"
+            "   - Prefer higher-scored recipes (8–10 are proven favourites; 6–7 are solid).\n"
+            "   - 'unrated' means the recipe has never been scored — good to include so it can be evaluated.\n"
+            "   - Avoid recipes cooked in the last 14 days — too recent to repeat.\n"
+            "   - Target roughly a 4-week frequency: anything last cooked 4+ weeks ago is fair game.\n"
+            "   - 'last cooked: never' means the recipe has never been made — treat as a great candidate to try.\n"
+            "   - A recipe can still be included if last cooked 4+ weeks ago even if its score is not the highest, "
+            "especially if the user's pantry or request steers towards it.\n\n"
 
             + settings_block
 

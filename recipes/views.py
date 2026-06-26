@@ -53,16 +53,18 @@ def get_one(request, info_id):
         components__recipe=info
     ).prefetch_related('components__recipe__recipe_tags').distinct()
     pantry_type_ids = set()
+    pantry_amounts = {}   # {ingredient_type_id: "amount string"} for JS comparison
     if request.user.is_authenticated:
-        pantry_type_ids = set(
-            PantryItem.objects.filter(user=request.user)
-            .values_list('ingredient_type_id', flat=True)
-        )
+        pantry_items = PantryItem.objects.filter(user=request.user).select_related('ingredient_type')
+        for item in pantry_items:
+            pantry_type_ids.add(item.ingredient_type_id)
+            pantry_amounts[item.ingredient_type_id] = item.amount
     cook_logs = list(info.cook_logs.order_by('-date', '-created_at'))
     return render(request, 'recipes/info.html', {
         'info': info,
         'dinners': dinners,
         'pantry_type_ids': pantry_type_ids,
+        'pantry_amounts': pantry_amounts,
         'cook_logs': cook_logs,
     })
 
@@ -188,19 +190,16 @@ def delete_all(request):
 
 
 def add_to_shop(request):
-    if request.user.is_authenticated:
+    if request.user.is_authenticated and request.method == 'POST':
         current_user = request.user
-        if request.method == 'POST':
-            ingredients = request.POST
-            list_ing = iter(ingredients)
-            next(list_ing)  # skip csrfmiddlewaretoken
-            for item in list_ing:
-                ing = Ingredient.objects.select_related('ingredient_type').filter(
-                    pk=request.POST[item]
-                ).first()
-                if ing and ing.ingredient_type:
-                    _add_to_shop_list(current_user, ing.ingredient_type, ing.measurment)
-
+        for key, ing_id in request.POST.items():
+            if not key.startswith('select'):
+                continue  # skip csrfmiddlewaretoken, amt_X overrides, etc.
+            ing = Ingredient.objects.select_related('ingredient_type').filter(pk=ing_id).first()
+            if ing and ing.ingredient_type:
+                # Use the scaled amount submitted by the servings scaler if present
+                scaled = request.POST.get(f'amt_{ing.id}', '').strip()
+                _add_to_shop_list(current_user, ing.ingredient_type, scaled or ing.measurment)
     return HttpResponseRedirect("/recipes/shopping/")
     
     
@@ -637,15 +636,17 @@ def dinner_combined(request, dinner_id):
         'recipe__instruction_set',
     )
     pantry_type_ids = set()
+    pantry_amounts = {}
     if request.user.is_authenticated:
-        pantry_type_ids = set(
-            PantryItem.objects.filter(user=request.user)
-            .values_list('ingredient_type_id', flat=True)
-        )
+        pantry_items = PantryItem.objects.filter(user=request.user).select_related('ingredient_type')
+        for item in pantry_items:
+            pantry_type_ids.add(item.ingredient_type_id)
+            pantry_amounts[item.ingredient_type_id] = item.amount
     return render(request, 'recipes/dinner_combined.html', {
         'dinner': dinner,
         'components': components,
         'pantry_type_ids': pantry_type_ids,
+        'pantry_amounts': pantry_amounts,
     })
 
 
@@ -659,7 +660,9 @@ def add_dinner_to_shop(request):
     ).select_related('ingredient_type')
     for ingredient in ingredients:
         if ingredient.ingredient_type:
-            _add_to_shop_list(request.user, ingredient.ingredient_type, ingredient.measurment)
+            # Use the scaled amount submitted by the servings scaler if present
+            scaled = request.POST.get(f'amt_{ingredient.id}', '').strip()
+            _add_to_shop_list(request.user, ingredient.ingredient_type, scaled or ingredient.measurment)
     return HttpResponseRedirect('/recipes/shopping/')
 
 

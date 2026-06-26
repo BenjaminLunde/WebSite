@@ -137,12 +137,18 @@
                         <input type="checkbox"
                                name="select{{ forloop.counter }}"
                                value="{{ ingredient.id }}"
-                               class="custom-control-input"
+                               class="custom-control-input ing-checkbox"
                                id="customCheck{{ forloop.counter }}"
                                style="width: 20px; height: 20px;"
+                               {% if itype %}data-type-id="{{ itype.id }}"{% endif %}
+                               data-originally-needed="{% if not itype or itype.id not in pantry_type_ids and not itype.is_always_available %}1{% else %}0{% endif %}"
                                {% if not itype or itype.id not in pantry_type_ids and not itype.is_always_available %}checked{% endif %}>
+                        <input type="hidden" name="amt_{{ ingredient.id }}" value="{{ ingredient.measurment }}">
                         <label class="custom-control-label" for="customCheck{{ forloop.counter }}">
-                            <span class="ing-amount" data-base="{{ ingredient.measurment }}">{{ ingredient.measurment }}</span> {{ ingredient.name }}
+                            <span class="ing-amount"
+                                  data-base="{{ ingredient.measurment }}"
+                                  data-ing-id="{{ ingredient.id }}"
+                                  {% if itype %}data-type-id="{{ itype.id }}"{% endif %}>{{ ingredient.measurment }}</span> {{ ingredient.name }}
                             {% if itype and itype.id in pantry_type_ids %}
                             <span class="badge badge-success ml-1" style="font-size:10px;">In pantry</span>
                             {% elif itype and itype.is_always_available %}
@@ -319,6 +325,12 @@
 // Auto-enable wake lock so the screen stays on while cooking
 initWakeLock();
 
+// ── Pantry amounts from server: { typeId(int): "amount string" } ──
+const PANTRY_AMOUNTS = {
+    {% for tid, amt in pantry_amounts.items %}{{ tid }}: "{{ amt }}",
+    {% endfor %}
+};
+
 // ── Servings scaler ───────────────────────────────────────────────
 const BASE_SERVINGS = {{ info.servings }};
 let curServings = BASE_SERVINGS;
@@ -328,11 +340,56 @@ function changeServings(delta) {
     if (next < 1) return;
     curServings = next;
     document.getElementById('servingsDisplay').textContent = next;
+
     document.querySelectorAll('.ing-amount').forEach(function (el) {
         const p = parseIngAmt(el.dataset.base);
         if (!p) return;
-        el.textContent = fmtAmt(p.num * next / BASE_SERVINGS) + (p.unit ? ' ' + p.unit : '');
+        const scaledNum = p.num * next / BASE_SERVINGS;
+        const scaledStr = fmtAmt(scaledNum) + (p.unit ? ' ' + p.unit : '');
+        el.textContent = scaledStr;
+
+        // Keep the hidden amt_X field in sync so the cart gets the right amount
+        const ingId = el.dataset.ingId;
+        if (ingId) {
+            const hidden = document.querySelector('input[name="amt_' + ingId + '"]');
+            if (hidden) hidden.value = scaledStr;
+        }
+
+        // Re-evaluate the pantry checkbox
+        const typeId = el.dataset.typeId;
+        if (!typeId) return;
+        const checkbox = document.querySelector('.ing-checkbox[data-type-id="' + typeId + '"]');
+        if (!checkbox) return;
+
+        if (checkbox.dataset.originallyNeeded === '1') {
+            // Was never in pantry — always needs buying regardless of scale
+            checkbox.checked = true;
+            return;
+        }
+        // Was in pantry at base servings — check if scaled amount exceeds pantry stock
+        const pantryStr = PANTRY_AMOUNTS[typeId];
+        if (!pantryStr) { checkbox.checked = false; return; }
+        checkbox.checked = exceedsPantry(scaledNum, p.unit, pantryStr);
     });
+}
+
+// Returns true when the scaled recipe amount exceeds what's in the pantry
+function exceedsPantry(scaledQty, scaledUnit, pantryStr) {
+    const pantry = parseIngAmt(pantryStr);
+    if (!pantry) return false;
+    const s = toBase(scaledQty, scaledUnit);
+    const p = toBase(pantry.num, pantry.unit);
+    if (!s || !p || s.family !== p.family) return false; // incompatible units — assume pantry covers
+    return s.qty > p.qty;
+}
+
+function toBase(qty, unit) {
+    const w = { g: 1, kg: 1000 };
+    const v = { ml: 1, dl: 100, l: 1000, ts: 5, ss: 15 };
+    if (w[unit] !== undefined) return { qty: qty * w[unit], family: 'weight' };
+    if (v[unit] !== undefined) return { qty: qty * v[unit], family: 'volume' };
+    if (unit === 'stk')        return { qty: qty,           family: 'count'  };
+    return null;
 }
 
 function parseIngAmt(str) {

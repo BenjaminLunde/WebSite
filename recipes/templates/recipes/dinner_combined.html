@@ -33,9 +33,10 @@
                         <i class="fa fa-user" style="opacity:0.7;"></i>
                         <button type="button" class="btn btn-outline-light btn-sm py-0 px-2"
                                 onclick="chgSrv('c{{ component.id }}', -1)">−</button>
-                        <span id="srv-c{{ component.id }}">{{ component.recipe.servings }}</span> porsjoner
+                        <span id="srv-c{{ component.id }}">{{ component.recipe.servings }}</span>
                         <button type="button" class="btn btn-outline-light btn-sm py-0 px-2"
                                 onclick="chgSrv('c{{ component.id }}', +1)">+</button>
+                        porsjoner
                     </div>
                     {% for ingredient in component.recipe.ingredient_set.all %}
                     {% with itype=ingredient.ingredient_type %}

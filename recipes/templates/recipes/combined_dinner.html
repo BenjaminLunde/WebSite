@@ -35,9 +35,10 @@
                     <i class="fa fa-user" style="opacity:0.7;"></i>
                     <button type="button" class="btn btn-outline-light btn-sm py-0 px-2"
                             onclick="chgSrv('main', -1)">−</button>
-                    <span id="srv-main">{{ main.servings }}</span> porsjoner
+                    <span id="srv-main">{{ main.servings }}</span>
                     <button type="button" class="btn btn-outline-light btn-sm py-0 px-2"
                             onclick="chgSrv('main', +1)">+</button>
+                    porsjoner
                 </div>
                 {% for ingredient in main.ingredient_set.all %}
                 <div style="padding-bottom: 6px;">
@@ -60,9 +61,10 @@
                     <i class="fa fa-user" style="opacity:0.7;"></i>
                     <button type="button" class="btn btn-outline-light btn-sm py-0 px-2"
                             onclick="chgSrv('s{{ r.id }}', -1)">−</button>
-                    <span id="srv-s{{ r.id }}">{{ r.servings }}</span> porsjoner
+                    <span id="srv-s{{ r.id }}">{{ r.servings }}</span>
                     <button type="button" class="btn btn-outline-light btn-sm py-0 px-2"
                             onclick="chgSrv('s{{ r.id }}', +1)">+</button>
+                    porsjoner
                 </div>
                 {% for ingredient in r.ingredient_set.all %}
                 <div style="padding-bottom: 6px;">

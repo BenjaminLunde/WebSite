@@ -2,7 +2,7 @@
 
 {% block content %}
 
-<form method="post" id="editForm">
+<form method="post" enctype="multipart/form-data" id="editForm">
 {% csrf_token %}
 
 {# Hidden counters — JS keeps these in sync #}
@@ -29,18 +29,41 @@
 {# ── Header row (mirrors info.html layout) ──────────────────────────────── #}
 <div class="row" style="width:100%;">
 
-    {# Photo column — placeholder only; upload via admin #}
+    {# Photo column — inline upload with live preview #}
     <div class="col-lg-6 d-flex align-items-center">
         <div class="px-3 px-md-5 pb-4 pt-4" style="width:100%;">
+
+            {# Current photo or placeholder #}
             {% if recipe.photo %}
-            <img class="img-fluid mb-2" style="width:100%; height:auto; object-fit:cover;" src="/media/{{ recipe.photo }}">
+            <img id="photoPreview" class="img-fluid mb-2"
+                 style="width:100%; height:auto; object-fit:cover;"
+                 src="/media/{{ recipe.photo }}">
             {% else %}
-            <div class="text-center text-muted py-5" style="border:2px dashed #ccc; border-radius:8px;">
-                <i class="fas fa-camera fa-3x mb-2"></i>
-                <p class="mb-1">No photo yet</p>
-                <small>Add a photo via <a href="/admin/recipes/info/{{ recipe.id }}/change/">Django admin</a></small>
+            <div id="photoPreview" class="text-center text-muted py-5 mb-2"
+                 style="border:2px dashed #ccc; border-radius:8px;">
+                <i class="fas fa-camera fa-3x mb-2 d-block"></i>
+                <span>No photo yet</span>
             </div>
             {% endif %}
+
+            {# Upload controls #}
+            <div class="d-flex align-items-center flex-wrap mt-2" style="gap:6px;">
+                <label class="btn btn-outline-secondary btn-sm mb-0" for="photoInput">
+                    <i class="fas fa-upload mr-1"></i>
+                    {% if recipe.photo %}Change photo{% else %}Upload photo{% endif %}
+                </label>
+                <input type="file" id="photoInput" name="photo"
+                       accept="image/*" class="d-none"
+                       onchange="previewPhoto(this)">
+                <input type="hidden" name="clear_photo" id="clearPhotoFlag" value="0">
+                <button type="button" id="removePhotoBtn"
+                        class="btn btn-outline-danger btn-sm {% if not recipe.photo %}d-none{% endif %}"
+                        onclick="clearPhoto()">
+                    <i class="fas fa-trash mr-1"></i>Remove photo
+                </button>
+            </div>
+            <small class="text-muted d-block mt-1">JPG, PNG or WebP — displayed at full width</small>
+
         </div>
     </div>
 
@@ -191,6 +214,43 @@
 </form>
 
 <script>
+// ── Photo upload & preview ───────────────────────────────────────────────────
+
+function previewPhoto(input) {
+    if (!input.files || !input.files[0]) return;
+    document.getElementById('clearPhotoFlag').value = '0';
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        let prev = document.getElementById('photoPreview');
+        // If placeholder div is showing, swap it for an <img>
+        if (prev.tagName === 'DIV') {
+            const img = document.createElement('img');
+            img.id            = 'photoPreview';
+            img.className     = 'img-fluid mb-2';
+            img.style.cssText = 'width:100%; height:auto; object-fit:cover;';
+            prev.replaceWith(img);
+            prev = img;
+        }
+        prev.src = e.target.result;
+        document.getElementById('removePhotoBtn').classList.remove('d-none');
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+
+function clearPhoto() {
+    document.getElementById('clearPhotoFlag').value = '1';
+    document.getElementById('photoInput').value     = '';
+    document.getElementById('removePhotoBtn').classList.add('d-none');
+    // Swap back to placeholder div
+    const prev = document.getElementById('photoPreview');
+    const div  = document.createElement('div');
+    div.id            = 'photoPreview';
+    div.className     = 'text-center text-muted py-5 mb-2';
+    div.style.cssText = 'border:2px dashed #ccc; border-radius:8px;';
+    div.innerHTML     = '<i class="fas fa-camera fa-3x mb-2 d-block"></i><span>No photo yet</span>';
+    prev.replaceWith(div);
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function ingCount()  { return parseInt(document.getElementById('ing_count').value);  }

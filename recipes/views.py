@@ -684,6 +684,17 @@ def edit_recipe(request, info_id):
             recipe.difficulty = int(request.POST.get('difficulty', recipe.difficulty))
         except (ValueError, TypeError):
             pass
+
+        # ── Photo ─────────────────────────────────────────────────────────────
+        if request.FILES.get('photo'):
+            # New upload — replace whatever was there
+            if recipe.photo:
+                recipe.photo.delete(save=False)
+            recipe.photo = request.FILES['photo']
+        elif request.POST.get('clear_photo') == '1' and recipe.photo:
+            recipe.photo.delete(save=False)
+            recipe.photo = None
+
         recipe.save()
 
         # ── Tags ──────────────────────────────────────────────────────────────

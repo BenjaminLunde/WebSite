@@ -154,19 +154,21 @@ def gemini_parse_recipe(page_text):
 
     try:
         client = anthropic.Anthropic()
+        # Prefill the assistant turn with "{" so Claude cannot output anything
+        # before the JSON object — eliminates all "Here is the recipe:" preambles.
         response = client.messages.create(
             model='claude-haiku-4-5',
             max_tokens=4096,
-            messages=[{"role": "user", "content": _PARSE_PROMPT + page_text}],
+            messages=[
+                {"role": "user",      "content": _PARSE_PROMPT + page_text},
+                {"role": "assistant", "content": "{"},
+            ],
         )
-        raw = response.content[0].text.strip()
-        # Strip markdown code fences if present
-        if raw.startswith('```'):
-            raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
+        raw = '{' + response.content[0].text.strip()
         data = json.loads(raw)
         return data, ''
-    except json.JSONDecodeError:
-        return None, 'AI returned a response that could not be parsed as JSON. Try again.'
+    except json.JSONDecodeError as exc:
+        return None, f'AI returned a response that could not be parsed as JSON ({exc}). Try again.'
     except Exception as exc:
         return None, f'AI request failed: {exc}'
 
@@ -230,15 +232,16 @@ def generate_recipe(query):
         response = client.messages.create(
             model='claude-haiku-4-5',
             max_tokens=4096,
-            messages=[{"role": "user", "content": _GENERATE_PROMPT + query}],
+            messages=[
+                {"role": "user",      "content": _GENERATE_PROMPT + query},
+                {"role": "assistant", "content": "{"},
+            ],
         )
-        raw = response.content[0].text.strip()
-        if raw.startswith('```'):
-            raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
+        raw = '{' + response.content[0].text.strip()
         data = json.loads(raw)
         return data, ''
-    except json.JSONDecodeError:
-        return None, 'AI returned a response that could not be parsed as JSON. Try again.'
+    except json.JSONDecodeError as exc:
+        return None, f'AI returned a response that could not be parsed as JSON ({exc}). Try again.'
     except Exception as exc:
         return None, f'AI request failed: {exc}'
 
@@ -349,11 +352,12 @@ def _normalize_new_ingredients(new_type_ids):
         response = client.messages.create(
             model='claude-haiku-4-5',
             max_tokens=4096,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "user",      "content": prompt},
+                {"role": "assistant", "content": "{"},
+            ],
         )
-        raw = response.content[0].text.strip()
-        if raw.startswith('```'):
-            raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
+        raw = '{' + response.content[0].text.strip()
         result = json.loads(raw)
     except Exception:
         return  # silently skip — recipe is saved regardless
@@ -446,11 +450,12 @@ def _auto_tag_recipe(recipe):
         response = client.messages.create(
             model='claude-haiku-4-5',
             max_tokens=256,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "user",      "content": prompt},
+                {"role": "assistant", "content": "["},
+            ],
         )
-        raw = response.content[0].text.strip()
-        if raw.startswith('```'):
-            raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
+        raw = '[' + response.content[0].text.strip()
         tag_names = json.loads(raw)
         if isinstance(tag_names, list) and tag_names:
             tags = RecipeTag.objects.filter(name__in=tag_names)

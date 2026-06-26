@@ -322,9 +322,6 @@
 {{ pantry_amounts|json_script:"pantry-amounts-data" }}
 
 <script>
-// Auto-enable wake lock so the screen stays on while cooking
-initWakeLock();
-
 // ── Pantry amounts from server: { "typeId": "amount string" } ──
 const PANTRY_AMOUNTS = JSON.parse(document.getElementById('pantry-amounts-data').textContent);
 
@@ -400,5 +397,9 @@ function fmtAmt(n) {
     const s = (Math.round(n * 10) / 10).toFixed(1);
     return s.endsWith('.0') ? s.slice(0, -2) : s;
 }
+
+// Auto-enable wake lock — called LAST so it can't crash the setup above.
+// (initWakeLock is defined in base.html's script which loads after </main>.)
+initWakeLock();
 </script>
 {% endblock %}

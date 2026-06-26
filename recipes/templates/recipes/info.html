@@ -56,7 +56,12 @@
                 <div data-aos="fade-up" data-aos-duration="1100" class="aos-init aos-animate"><p style="font-weight: 400;"> {{ info.intro }} </p></div>
                 <ul class="list-inline list-unstyled mt-5">
                     <li class="list-inline-item mb-2 aos-init" data-aos="fade-up" data-aos-duration="1200">
-                        <i class="fa fa-user pr-1" aria-hidden="true" style="height:25px;" alt="servings">  {{ info.servings }} porsjoner  </i>
+                        <i class="fa fa-user pr-1" aria-hidden="true"></i>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                onclick="changeServings(-1)">−</button>
+                        <span id="servingsDisplay">{{ info.servings }}</span> porsjoner
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                onclick="changeServings(+1)">+</button>
                     </li>
                     <li class="list-inline-item mb-2 aos-init" data-aos="fade-up" data-aos-duration="1300">
                         <i class="fas fa-clock pr-1" aria-hidden="true" style="height:25px;" alt="time"> {{ info.time }} </i>
@@ -133,7 +138,7 @@
                                style="width: 20px; height: 20px;"
                                {% if not itype or itype.id not in pantry_type_ids and not itype.is_always_available %}checked{% endif %}>
                         <label class="custom-control-label" for="customCheck{{ forloop.counter }}">
-                            {{ ingredient.measurment }} {{ ingredient.name }}
+                            <span class="ing-amount" data-base="{{ ingredient.measurment }}">{{ ingredient.measurment }}</span> {{ ingredient.name }}
                             {% if itype and itype.id in pantry_type_ids %}
                             <span class="badge badge-success ml-1" style="font-size:10px;">In pantry</span>
                             {% elif itype and itype.is_always_available %}
@@ -309,5 +314,33 @@
 <script>
 // Auto-enable wake lock so the screen stays on while cooking
 initWakeLock();
+
+// ── Servings scaler ───────────────────────────────────────────────
+const BASE_SERVINGS = {{ info.servings }};
+let curServings = BASE_SERVINGS;
+
+function changeServings(delta) {
+    const next = curServings + delta;
+    if (next < 1) return;
+    curServings = next;
+    document.getElementById('servingsDisplay').textContent = next;
+    document.querySelectorAll('.ing-amount').forEach(function (el) {
+        const p = parseIngAmt(el.dataset.base);
+        if (!p) return;
+        el.textContent = fmtAmt(p.num * next / BASE_SERVINGS) + (p.unit ? ' ' + p.unit : '');
+    });
+}
+
+function parseIngAmt(str) {
+    const m = (str || '').trim().match(/^([\d.,]+)\s*(.*)$/);
+    if (!m) return null;
+    return { num: parseFloat(m[1].replace(',', '.')), unit: m[2].trim() };
+}
+
+function fmtAmt(n) {
+    if (n === Math.round(n)) return String(Math.round(n));
+    const s = (Math.round(n * 10) / 10).toFixed(1);
+    return s.endsWith('.0') ? s.slice(0, -2) : s;
+}
 </script>
 {% endblock %}

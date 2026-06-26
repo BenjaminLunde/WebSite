@@ -31,10 +31,21 @@
                 <h6 class="mt-3 mb-1" style="border-bottom:1px solid rgba(255,255,255,0.4); padding-bottom:4px;">
                     {{ main.title }}
                 </h6>
+                <div class="d-flex align-items-center mb-2" style="gap:4px; font-size:0.82rem;">
+                    <i class="fa fa-user" style="opacity:0.7;"></i>
+                    <button type="button" class="btn btn-outline-light btn-sm py-0 px-2"
+                            onclick="chgSrv('main', -1)">−</button>
+                    <span id="srv-main">{{ main.servings }}</span> porsjoner
+                    <button type="button" class="btn btn-outline-light btn-sm py-0 px-2"
+                            onclick="chgSrv('main', +1)">+</button>
+                </div>
                 {% for ingredient in main.ingredient_set.all %}
                 <div style="padding-bottom: 6px;">
                     <input type="checkbox" checked style="width:16px;height:16px;vertical-align:middle;">
-                    <span style="font-size:15px;"> {{ ingredient.measurment }} {{ ingredient.name }}</span>
+                    <span style="font-size:15px;">
+                        <span class="ing-amount" data-base="{{ ingredient.measurment }}" data-group="main">{{ ingredient.measurment }}</span>
+                        {{ ingredient.name }}
+                    </span>
                 </div>
                 {% empty %}
                 <p class="text-white-50"><em>No ingredients listed</em></p>
@@ -45,19 +56,36 @@
                 <h6 class="mt-3 mb-1" style="border-bottom:1px solid rgba(255,255,255,0.4); padding-bottom:4px;">
                     {{ r.title }}
                 </h6>
+                <div class="d-flex align-items-center mb-2" style="gap:4px; font-size:0.82rem;">
+                    <i class="fa fa-user" style="opacity:0.7;"></i>
+                    <button type="button" class="btn btn-outline-light btn-sm py-0 px-2"
+                            onclick="chgSrv('s{{ r.id }}', -1)">−</button>
+                    <span id="srv-s{{ r.id }}">{{ r.servings }}</span> porsjoner
+                    <button type="button" class="btn btn-outline-light btn-sm py-0 px-2"
+                            onclick="chgSrv('s{{ r.id }}', +1)">+</button>
+                </div>
                 {% for ingredient in r.ingredient_set.all %}
                 <div style="padding-bottom: 6px;">
                     <input type="checkbox" checked style="width:16px;height:16px;vertical-align:middle;">
-                    <span style="font-size:15px;"> {{ ingredient.measurment }} {{ ingredient.name }}</span>
+                    <span style="font-size:15px;">
+                        <span class="ing-amount" data-base="{{ ingredient.measurment }}" data-group="s{{ r.id }}">{{ ingredient.measurment }}</span>
+                        {{ ingredient.name }}
+                    </span>
                 </div>
                 {% empty %}
                 <p class="text-white-50"><em>No ingredients listed</em></p>
                 {% endfor %}
                 {% endfor %}
 
-                <div class="mt-4 mb-3">
-                    <button type="submit" class="btn btn-secondary w-100">
+                <div class="mt-4 mb-2 d-flex" style="gap:6px;">
+                    <button type="submit" class="btn btn-secondary flex-fill">
                         <i class="fas fa-shopping-cart mr-1"></i> Add all to Shopping list
+                    </button>
+                    <button id="wakeLockBtn" type="button"
+                            class="btn btn-outline-light btn-sm"
+                            onclick="toggleWakeLock()"
+                            title="Tap to keep the screen on">
+                        <i class="fas fa-moon mr-1"></i>Screen On
                     </button>
                 </div>
                 </form>
@@ -110,4 +138,39 @@
     </div>
 
 </div>
+<script>
+// ── Per-recipe servings scaler ────────────────────────────────────
+var baseSrv = {
+    'main': {{ main.servings }},
+    {% for r in selected %}'s{{ r.id }}': {{ r.servings }},{% endfor %}
+};
+var curSrv = Object.assign({}, baseSrv);
+
+function chgSrv(grp, delta) {
+    var next = (curSrv[grp] || 1) + delta;
+    if (next < 1) return;
+    curSrv[grp] = next;
+    document.getElementById('srv-' + grp).textContent = next;
+    document.querySelectorAll('.ing-amount[data-group="' + grp + '"]').forEach(function (el) {
+        var p = parseIngAmt(el.dataset.base);
+        if (!p) return;
+        el.textContent = fmtAmt(p.num * next / baseSrv[grp]) + (p.unit ? ' ' + p.unit : '');
+    });
+}
+
+function parseIngAmt(str) {
+    var m = (str || '').trim().match(/^([\d.,]+)\s*(.*)$/);
+    if (!m) return null;
+    return { num: parseFloat(m[1].replace(',', '.')), unit: m[2].trim() };
+}
+
+function fmtAmt(n) {
+    if (n === Math.round(n)) return String(Math.round(n));
+    var s = (Math.round(n * 10) / 10).toFixed(1);
+    return s.endsWith('.0') ? s.slice(0, -2) : s;
+}
+
+// Keep screen on while cooking
+initWakeLock();
+</script>
 {% endblock %}

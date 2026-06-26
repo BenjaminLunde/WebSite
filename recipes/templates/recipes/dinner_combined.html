@@ -29,6 +29,14 @@
                         <a href="/recipes/{{ component.recipe.id }}/"
                            class="text-white-50 small ml-1" style="font-weight: normal;">↗</a>
                     </h6>
+                    <div class="d-flex align-items-center mb-2" style="gap:4px; font-size:0.82rem;">
+                        <i class="fa fa-user" style="opacity:0.7;"></i>
+                        <button type="button" class="btn btn-outline-light btn-sm py-0 px-2"
+                                onclick="chgSrv('c{{ component.id }}', -1)">−</button>
+                        <span id="srv-c{{ component.id }}">{{ component.recipe.servings }}</span> porsjoner
+                        <button type="button" class="btn btn-outline-light btn-sm py-0 px-2"
+                                onclick="chgSrv('c{{ component.id }}', +1)">+</button>
+                    </div>
                     {% for ingredient in component.recipe.ingredient_set.all %}
                     {% with itype=ingredient.ingredient_type %}
                     <div style="padding-bottom: 6px;">
@@ -38,7 +46,7 @@
                                {% if not itype or itype.id not in pantry_type_ids and not itype.is_always_available %}checked{% endif %}
                                style="width: 16px; height: 16px; vertical-align: middle;">
                         <span style="font-size: 15px;">
-                            {{ ingredient.measurment }} {{ ingredient.name }}
+                            <span class="ing-amount" data-base="{{ ingredient.measurment }}" data-group="c{{ component.id }}">{{ ingredient.measurment }}</span> {{ ingredient.name }}
                             {% if itype and itype.id in pantry_type_ids %}
                             <span class="badge badge-light ml-1" style="font-size:10px; color:#333;">In pantry</span>
                             {% elif itype and itype.is_always_available %}
@@ -55,10 +63,18 @@
                     {% endfor %}
 
                     <div class="mt-4 mb-2">
-                        <button type="button" class="btn btn-outline-light btn-sm w-100 mb-3"
-                                onclick="checkAllDinner()">
-                            <i class="fas fa-check-square mr-1"></i>Check all
-                        </button>
+                        <div class="d-flex mb-3" style="gap:6px;">
+                            <button type="button" class="btn btn-outline-light btn-sm flex-fill"
+                                    onclick="checkAllDinner()">
+                                <i class="fas fa-check-square mr-1"></i>Check all
+                            </button>
+                            <button id="wakeLockBtn" type="button"
+                                    class="btn btn-outline-light btn-sm"
+                                    onclick="toggleWakeLock()"
+                                    title="Tap to keep the screen on">
+                                <i class="fas fa-moon mr-1"></i>Screen On
+                            </button>
+                        </div>
                         <button type="submit" class="btn btn-success w-100 mb-2">
                             <i class="fas fa-shopping-cart mr-1"></i>Add selected to Shopping list
                         </button>
@@ -75,6 +91,41 @@
                     var allChecked = Array.from(boxes).every(function(b) { return b.checked; });
                     boxes.forEach(function(b) { b.checked = !allChecked; });
                 }
+
+                // ── Per-recipe servings scaler ────────────────────────────
+                var baseSrv = {
+                    {% for component in components %}
+                    'c{{ component.id }}': {{ component.recipe.servings }},
+                    {% endfor %}
+                };
+                var curSrv = Object.assign({}, baseSrv);
+
+                function chgSrv(grp, delta) {
+                    var next = (curSrv[grp] || 1) + delta;
+                    if (next < 1) return;
+                    curSrv[grp] = next;
+                    document.getElementById('srv-' + grp).textContent = next;
+                    document.querySelectorAll('.ing-amount[data-group="' + grp + '"]').forEach(function (el) {
+                        var p = parseIngAmt(el.dataset.base);
+                        if (!p) return;
+                        el.textContent = fmtAmt(p.num * next / baseSrv[grp]) + (p.unit ? ' ' + p.unit : '');
+                    });
+                }
+
+                function parseIngAmt(str) {
+                    var m = (str || '').trim().match(/^([\d.,]+)\s*(.*)$/);
+                    if (!m) return null;
+                    return { num: parseFloat(m[1].replace(',', '.')), unit: m[2].trim() };
+                }
+
+                function fmtAmt(n) {
+                    if (n === Math.round(n)) return String(Math.round(n));
+                    var s = (Math.round(n * 10) / 10).toFixed(1);
+                    return s.endsWith('.0') ? s.slice(0, -2) : s;
+                }
+
+                // Keep screen on while cooking
+                initWakeLock();
                 </script>
             </div>
         </div>

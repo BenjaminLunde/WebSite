@@ -54,10 +54,16 @@
     <div id="shopping-section">
     {% if has_items %}
 
-        <!-- Check all at top -->
-        <div class="mb-3">
+        <!-- Check all + keep screen on -->
+        <div class="mb-3 d-flex flex-wrap" style="gap:8px;">
             <button type="button" onclick="toggleCheckAll()" class="btn btn-secondary">
                 <i class="fas fa-check-square mr-1"></i>Check all
+            </button>
+            <button id="wakeLockBtn" type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    onclick="toggleWakeLock()"
+                    title="Tap to keep the screen on">
+                <i class="fas fa-moon mr-1"></i>Keep Screen On
             </button>
         </div>
 
@@ -142,6 +148,9 @@
 </div>
 
 <script>
+// Auto-enable wake lock so the screen stays on while shopping
+initWakeLock();
+
 // ── CSRF ─────────────────────────────────────────────────────────
 function getCsrf() {
     return document.querySelector('#addItemForm [name=csrfmiddlewaretoken]').value;

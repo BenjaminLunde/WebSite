@@ -89,6 +89,14 @@
                     <i class="fas fa-utensils mr-1"></i> Log a Cook
                 </button>
                 {% endif %}
+
+                <!-- Keep screen on while cooking -->
+                <button id="wakeLockBtn" type="button"
+                        class="btn btn-outline-secondary btn-sm mt-3"
+                        onclick="toggleWakeLock()"
+                        title="Tap to keep the screen on">
+                    <i class="fas fa-moon mr-1"></i>Keep Screen On
+                </button>
             </div>
         </div>
     </div>
@@ -297,4 +305,9 @@
     {% endif %}
 
 </div>
+
+<script>
+// Auto-enable wake lock so the screen stays on while cooking
+initWakeLock();
+</script>
 {% endblock %}

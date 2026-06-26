@@ -72,9 +72,15 @@
         {% endfor %}
 
         {% if grouped %}
-        <div class="mt-3 mb-5">
+        <div class="mt-3 mb-5 d-flex flex-wrap align-items-center" style="gap:12px;">
             <button type="submit" class="btn btn-primary btn-lg">
                 <i class="fas fa-utensils mr-2"></i> Open combined dinner view
+            </button>
+            <button id="wakeLockBtn" type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    onclick="toggleWakeLock()"
+                    title="Tap to keep the screen on">
+                <i class="fas fa-moon mr-1"></i>Keep Screen On
             </button>
         </div>
         {% endif %}
@@ -86,4 +92,8 @@
 
 </div>
 
+<script>
+// Auto-enable wake lock so the screen stays on while planning dinner
+initWakeLock();
+</script>
 {% endblock %}

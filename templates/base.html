@@ -166,5 +166,68 @@ function eventCheckBox() {
     {% block content %}
     {% endblock %}
     </main>
+    <!-- ── Wake Lock ──────────────────────────────────────────────────
+         Keeps the screen awake on recipe, dinner & shopping pages.
+         Pages that want it call initWakeLock() after the DOM is ready.
+    ──────────────────────────────────────────────────────────────── -->
+    <script>
+    (function () {
+        var _lock = null, _active = false;
+
+        /* Public: request the lock (auto-called by specific pages) */
+        window.initWakeLock = async function () {
+            if (!('wakeLock' in navigator)) return;
+            try {
+                _lock   = await navigator.wakeLock.request('screen');
+                _active = true;
+                _render();
+            } catch (err) {
+                console.warn('Wake Lock request failed:', err);
+            }
+            /* Re-acquire lock when the tab becomes visible again */
+            document.addEventListener('visibilitychange', async function () {
+                if (_active && document.visibilityState === 'visible') {
+                    try { _lock = await navigator.wakeLock.request('screen'); } catch (e) {}
+                }
+            });
+        };
+
+        /* Public: toggle on/off when the user taps the button */
+        window.toggleWakeLock = async function () {
+            if (!('wakeLock' in navigator)) {
+                alert('Your browser doesn\'t support "Keep Screen On".\nTry Chrome or Safari 16.4+.');
+                return;
+            }
+            if (_active) {
+                if (_lock) { await _lock.release(); _lock = null; }
+                _active = false;
+            } else {
+                try {
+                    _lock   = await navigator.wakeLock.request('screen');
+                    _active = true;
+                } catch (err) {
+                    console.warn('Wake Lock request failed:', err);
+                }
+            }
+            _render();
+        };
+
+        function _render() {
+            var btn = document.getElementById('wakeLockBtn');
+            if (!btn) return;
+            if (_active) {
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-warning');
+                btn.title     = 'Screen will stay on — tap to allow it to sleep';
+                btn.innerHTML = '<i class="fas fa-sun mr-1"></i>Screen On';
+            } else {
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-outline-secondary');
+                btn.title     = 'Tap to keep the screen on';
+                btn.innerHTML = '<i class="fas fa-moon mr-1"></i>Keep Screen On';
+            }
+        }
+    }());
+    </script>
 </body>
 </html>

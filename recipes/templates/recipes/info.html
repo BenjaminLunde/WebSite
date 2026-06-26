@@ -128,8 +128,7 @@
                             onclick="changeServings(+1)">+</button>
                     porsjoner
                 </div>
-                <div class="tab-content">
-                    <form action="/recipes/add_to_shop/" method="post">
+                <form action="/recipes/add_to_shop/" method="post">
                     {% csrf_token %}
                     {% for ingredient in info.ingredient_set.all %}
                     {% with itype=ingredient.ingredient_type %}
@@ -165,8 +164,7 @@
                         <button type="submit" class="btn btn-secondary btn-sm">Add to Shopping list</button>
                         <button type="submit" class="btn btn-secondary btn-sm" formaction="/recipes/remove_used/">Remove from Pantry</button>
                     </div>
-                    </form>
-                </div>
+                </form>
             </div>
         </div>
 
@@ -321,15 +319,14 @@
 
 </div>
 
+{{ pantry_amounts|json_script:"pantry-amounts-data" }}
+
 <script>
 // Auto-enable wake lock so the screen stays on while cooking
 initWakeLock();
 
-// ── Pantry amounts from server: { typeId(int): "amount string" } ──
-const PANTRY_AMOUNTS = {
-    {% for tid, amt in pantry_amounts.items %}{{ tid }}: "{{ amt }}",
-    {% endfor %}
-};
+// ── Pantry amounts from server: { "typeId": "amount string" } ──
+const PANTRY_AMOUNTS = JSON.parse(document.getElementById('pantry-amounts-data').textContent);
 
 // ── Servings scaler ───────────────────────────────────────────────
 const BASE_SERVINGS = {{ info.servings }};

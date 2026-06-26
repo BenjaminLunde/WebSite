@@ -127,6 +127,9 @@ Rules:
 - difficulty is 1 (very easy) to 5 (very hard).
 - Keep the instructions clear and concise — one action per step.
 - If a field is unknown, use a sensible default (servings=4, difficulty=2, time="unknown").
+- LANGUAGE: Write the title, intro, ingredient names, and every instruction step \
+in Norwegian (Bokmål). Translate all text — do not leave anything in English or \
+any other language.
 """ + _UNIT_RULES + """
 Text:
 """
@@ -196,6 +199,9 @@ Rules:
 - difficulty is 1 (very easy) to 5 (very hard).
 - Keep instructions clear and concise — one action per step.
 - Make the recipe practical and realistic for a home cook.
+- LANGUAGE: Write the title, intro, ingredient names, and every instruction step \
+in Norwegian (Bokmål). Translate all text — do not leave anything in English or \
+any other language.
 """ + _UNIT_RULES + """
 Dish:
 """
@@ -394,6 +400,66 @@ def _normalize_new_ingredients(new_type_ids):
 
 
 # ---------------------------------------------------------------------------
+# Auto-tagging
+# ---------------------------------------------------------------------------
+
+def _auto_tag_recipe(recipe):
+    """
+    Ask Claude to pick suitable RecipeTags for the newly imported recipe.
+    Uses the title, intro, and ingredient names as context.
+    Runs silently — failures are swallowed so the recipe is still saved.
+    """
+    if not os.environ.get('ANTHROPIC_API_KEY'):
+        return
+
+    try:
+        import anthropic
+    except ImportError:
+        return
+
+    from .models import RecipeTag
+
+    all_tags = list(RecipeTag.objects.values_list('name', flat=True))
+    if not all_tags:
+        return  # nothing to assign
+
+    ingredient_names = list(
+        recipe.ingredient_set
+              .select_related('ingredient_type')
+              .values_list('ingredient_type__name', flat=True)
+    )
+
+    prompt = (
+        'You are tagging a Norwegian recipe. '
+        'Based on the recipe details below, pick which tags from the list apply. '
+        'Return ONLY a JSON array of tag names — no markdown, no extra text. '
+        'Only use tags from the provided list. Return [] if none fit.\n\n'
+        f'Available tags: {json.dumps(all_tags, ensure_ascii=False)}\n\n'
+        f'Title: {recipe.title}\n'
+        f'Description: {recipe.intro}\n'
+        f'Ingredients: {", ".join(ingredient_names)}\n\n'
+        'Example response: ["Kylling", "Middag", "Asiatisk"]'
+    )
+
+    try:
+        client = anthropic.Anthropic()
+        response = client.messages.create(
+            model='claude-haiku-4-5',
+            max_tokens=256,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = response.content[0].text.strip()
+        if raw.startswith('```'):
+            raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
+        tag_names = json.loads(raw)
+        if isinstance(tag_names, list) and tag_names:
+            tags = RecipeTag.objects.filter(name__in=tag_names)
+            recipe.recipe_tags.set(tags)
+    except Exception:
+        pass  # silently skip — recipe is saved regardless
+
+
+# ---------------------------------------------------------------------------
 # Database creation
 # ---------------------------------------------------------------------------
 
@@ -439,7 +505,10 @@ def create_draft_recipe(data):
         if text:
             Instruction.objects.create(info=recipe, text=text)
 
-    # Normalise any freshly created ingredient types
+    # Normalise any freshly created ingredient types (translates names to Norwegian)
     _normalize_new_ingredients(new_type_ids)
+
+    # Auto-assign recipe tags based on content
+    _auto_tag_recipe(recipe)
 
     return recipe
